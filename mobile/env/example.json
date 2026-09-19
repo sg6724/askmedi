@@ -1,0 +1,5 @@
+{
+  "SUPABASE_URL": "https://YOUR-DEV-REF.supabase.co",
+  "SUPABASE_ANON_KEY": "your-publishable-or-anon-key",
+  "API_BASE_URL": "https://askmedi-api-xxxx.vercel.app"
+}

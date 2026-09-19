@@ -19,6 +19,7 @@ backend/.vercel/
 # Flutter
 mobile/.dart_tool/
 mobile/build/
+mobile/lib/core/l10n/gen/
 mobile/.flutter-plugins
 mobile/.flutter-plugins-dependencies
 mobile/env/*.json
