@@ -45,8 +45,9 @@ def client(fake_container: Container) -> TestClient:
     return TestClient(create_app(fake_container))
 
 
-def pytest_asyncio_loop_factories(config, item):
-    """psycopg async cannot run on Windows' default ProactorEventLoop; use a selector loop."""
-    if sys.platform == "win32":
+if sys.platform == "win32":
+    # psycopg async cannot run on Windows' default ProactorEventLoop, so use a selector loop.
+    # Defined ONLY on win32: pytest-asyncio 1.4.0 raises UsageError if any hook implementation
+    # exists and returns None, so the hook must not exist at all on other platforms.
+    def pytest_asyncio_loop_factories(config, item):
         return {"selector": lambda: asyncio.SelectorEventLoop(selectors.SelectSelector())}
-    return None

@@ -8,7 +8,13 @@ from psycopg_pool import AsyncConnectionPool
 
 
 class Database:
-    """Postgres access where every unit of work runs as the calling user (RLS applies)."""
+    """Postgres access where every unit of work runs as the calling user (RLS applies).
+
+    Event-loop affinity: the pool (and the internal asyncio.Lock) is bound to the event loop
+    on which the first `as_user()` call runs. The application must run on a single long-lived
+    loop (or construct one `Database` per loop). Never share an instance across loops or
+    across separate `asyncio.run` calls, and await `close()` on that same loop.
+    """
 
     def __init__(self, conninfo: str, max_size: int = 5) -> None:
         # prepare_threshold=None: required by Supabase's transaction pooler (no prepared stmts)
