@@ -1,3 +1,6 @@
+import asyncio
+import selectors
+import sys
 from dataclasses import dataclass, field
 
 import pytest
@@ -40,3 +43,10 @@ def fake_container() -> Container:
 @pytest.fixture
 def client(fake_container: Container) -> TestClient:
     return TestClient(create_app(fake_container))
+
+
+def pytest_asyncio_loop_factories(config, item):
+    """psycopg async cannot run on Windows' default ProactorEventLoop; use a selector loop."""
+    if sys.platform == "win32":
+        return {"selector": lambda: asyncio.SelectorEventLoop(selectors.SelectSelector())}
+    return None
