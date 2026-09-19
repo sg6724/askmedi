@@ -238,6 +238,11 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(8);
 
+-- pgTAP's result table/sequence are owned by the connecting role; the tests below
+-- run as `authenticated`, which needs to write to them (see pgTAP docs, "as another role").
+grant all on table __tresults__ to public;
+grant all on sequence __tresults___numb_seq to public;
+
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'a@test.dev'),
   ('22222222-2222-2222-2222-222222222222', 'b@test.dev');
@@ -283,9 +288,10 @@ select lives_ok(
   $$insert into public.audit_events (type, payload) values ('answer', '{}')$$,
   'user A can append own audit event');
 
-select is_empty(
-  $$delete from public.audit_events returning id$$,
-  'audit events are append-only (delete affects nothing)');
+select throws_ok(
+  $$delete from public.audit_events$$,
+  '42501', null,
+  'audit events are append-only (DELETE privilege is not granted)');
 
 select * from finish();
 rollback;
