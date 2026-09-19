@@ -1,0 +1,37 @@
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Claude Code local state
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+backend/.env
+backend/.vercel/
+
+# Flutter
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/env/*.json
+!mobile/env/example.json
+mobile/android/local.properties
+mobile/android/key.properties
+*.jks
+*.keystore
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# Project PDFs stay local
+*.pdf
