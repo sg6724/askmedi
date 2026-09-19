@@ -1,3 +1,4 @@
+import logging
 import time
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from pathlib import Path
@@ -6,6 +7,8 @@ from typing import Any
 import yaml
 
 from askmedi.domain.llm import ChatMessage, LLMResult, LLMUnavailable
+
+logger = logging.getLogger(__name__)
 
 CompletionFn = Callable[..., Awaitable[Any]]
 
@@ -49,12 +52,21 @@ class LiteLLMProvider:
             started = time.perf_counter()
             try:
                 resp = await self._completion(**kwargs)
-            except Exception as exc:  # noqa: BLE001 provider errors vary widely; fall through to next model
-                errors.append(f"{model}: {exc}")
+                # Parse response, treating empty/malformed as failures
+                if not resp.choices:
+                    errors.append(f"{model}: empty response")
+                    continue
+                text = resp.choices[0].message.content
+                if text is None or not text or text.isspace():
+                    errors.append(f"{model}: empty response")
+                    continue
+                latency = int((time.perf_counter() - started) * 1000)
+                return LLMResult(text=text, model=model, latency_ms=latency)
+            except Exception as exc:  # provider errors vary widely; catch all to enable fallback
+                exc_type_name = type(exc).__name__
+                errors.append(f"{model}: {exc_type_name}")
+                logger.warning(f"LLM provider error for {model}: {exc_type_name}", exc_info=True)
                 continue
-            text = resp.choices[0].message.content or ""
-            latency = int((time.perf_counter() - started) * 1000)
-            return LLMResult(text=text, model=model, latency_ms=latency)
         raise LLMUnavailable("; ".join(errors))
 
     @staticmethod
