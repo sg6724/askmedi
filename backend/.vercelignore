@@ -1,0 +1,10 @@
+# Keep local secrets and dev-only files out of the deployment bundle (backend/ has no .gitignore).
+.env
+.env.*
+!.env.example
+.venv/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+tests/
+scripts/
