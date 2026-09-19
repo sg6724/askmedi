@@ -1,3 +1,4 @@
+import logging
 from types import SimpleNamespace
 
 import pytest
@@ -150,3 +151,30 @@ async def test_error_message_does_not_contain_secrets():
     assert "DIFFERENT_SECRET" not in exc_str
     assert "boom" not in exc_str
     assert "https://" not in exc_str
+
+
+async def test_logging_does_not_expose_secrets(caplog):
+    """Verify that exception details (including secrets) do not leak into logs."""
+
+    class SecretCompletion:
+        async def __call__(self, **kwargs):
+            model = kwargs["model"]
+            if model == "gemini/a":
+                raise RuntimeError("boom key=SECRET123 https://example.com?key=SECRET123")
+            # Second model succeeds
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=SimpleNamespace(content="answer"))]
+            )
+
+    caplog.set_level(logging.WARNING)
+    fn = SecretCompletion()
+    provider = LiteLLMProvider({"reason": ["gemini/a", "groq/b"]}, completion_fn=fn)
+    result = await provider.complete("reason", MSGS)
+    # Should return second model's answer
+    assert result.model == "groq/b"
+    assert result.text == "answer"
+    # Logs should contain exception type name but NOT secrets or raw exception text
+    assert "RuntimeError" in caplog.text
+    assert "SECRET123" not in caplog.text
+    assert "boom" not in caplog.text
+    assert "https://" not in caplog.text

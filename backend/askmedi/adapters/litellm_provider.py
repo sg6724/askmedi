@@ -62,10 +62,10 @@ class LiteLLMProvider:
                     continue
                 latency = int((time.perf_counter() - started) * 1000)
                 return LLMResult(text=text, model=model, latency_ms=latency)
-            except Exception as exc:  # provider errors vary widely; catch all to enable fallback
+            except Exception as exc:  # noqa: BLE001 provider errors vary widely; catch all to enable fallback
                 exc_type_name = type(exc).__name__
                 errors.append(f"{model}: {exc_type_name}")
-                logger.warning(f"LLM provider error for {model}: {exc_type_name}", exc_info=True)
+                logger.warning("LLM provider error for %s: %s", model, exc_type_name)
                 continue
         raise LLMUnavailable("; ".join(errors))
 
