@@ -38,4 +38,36 @@ void main() {
     expect(container.read(localeControllerProvider), const Locale('mr'));
     expect(prefs.getString('app_locale'), 'mr');
   });
+
+  testWidgets('stays usable at 2.0x text scale on a small screen',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    await pumpLocalized(
+      tester,
+      Builder(
+        builder: (context) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: const TextScaler.linear(2.0)),
+          child: const LanguageScreen(),
+        ),
+      ),
+      locale: const Locale('mr'),
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(FilledButton), findsOneWidget);
+    // The Continue button must be on screen, not pushed past the viewport.
+    final center = tester.getCenter(find.byType(FilledButton));
+    expect(const Rect.fromLTWH(0, 0, 360, 640).contains(center), isTrue);
+
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+    expect(prefs.getString('app_locale'), 'en');
+  });
 }
