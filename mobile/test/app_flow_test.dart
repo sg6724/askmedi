@@ -1,0 +1,344 @@
+import 'dart:async';
+
+import 'package:askmedi/app.dart';
+import 'package:askmedi/core/l10n/gen/app_localizations.dart';
+import 'package:askmedi/core/network/api_client.dart';
+import 'package:askmedi/core/providers.dart';
+import 'package:askmedi/core/routing/router.dart';
+import 'package:askmedi/core/routing/routes.dart';
+import 'package:askmedi/features/auth/auth_repository.dart';
+import 'package:askmedi/features/consent/consent_purpose.dart';
+import 'package:askmedi/features/consent/consent_repository.dart';
+import 'package:askmedi/features/home/home_screen.dart';
+import 'package:askmedi/features/profile/health_profile.dart';
+import 'package:askmedi/features/profile/onboarding_repository.dart';
+import 'package:askmedi/features/profile/profile_repository.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// -- Fakes: no network, no Supabase ----------------------------------------
+
+class FakeAuthRepository implements AuthRepository {
+  FakeAuthRepository({this._signedIn = false});
+
+  bool _signedIn;
+  final _changes = StreamController<bool>.broadcast();
+  String? codeSentTo;
+
+  void setSignedIn(bool value) {
+    _signedIn = value;
+    _changes.add(value);
+  }
+
+  @override
+  bool get isSignedIn => _signedIn;
+
+  @override
+  Stream<bool> watchSignedIn() => _changes.stream;
+
+  @override
+  Future<void> signOut() async => setSignedIn(false);
+
+  @override
+  Future<void> sendEmailOtp(String email) async => codeSentTo = email;
+
+  @override
+  Future<void> signInWithGoogle() async {}
+
+  @override
+  Future<void> verifyEmailOtp({
+    required String email,
+    required String code,
+  }) async {}
+
+  @override
+  Future<String?> accessToken() async => null;
+}
+
+class FakeOnboardingRepository implements OnboardingRepository {
+  FakeOnboardingRepository(this.status, {this.error});
+
+  OnboardingStatus status;
+  Object? error;
+  int fetches = 0;
+
+  @override
+  Future<OnboardingStatus> fetch() async {
+    fetches++;
+    if (error != null) throw error!;
+    return status;
+  }
+}
+
+class FakeConsentRepository implements ConsentRepository {
+  FakeConsentRepository(this._onboarding);
+  final FakeOnboardingRepository _onboarding;
+  Map<ConsentPurpose, bool>? saved;
+
+  @override
+  Future<void> save(Map<ConsentPurpose, bool> choices) async {
+    saved = choices;
+    _onboarding.status = OnboardingStatus(
+      consentsGiven: true,
+      profileComplete: _onboarding.status.profileComplete,
+    );
+  }
+}
+
+class FakeProfileRepository implements ProfileRepository {
+  FakeProfileRepository(this._onboarding);
+  final FakeOnboardingRepository _onboarding;
+  HealthProfile? saved;
+  String? savedLanguage;
+
+  @override
+  Future<void> saveOnboardingProfile(
+    HealthProfile profile, {
+    required String language,
+  }) async {
+    saved = profile;
+    savedLanguage = language;
+    _onboarding.status = const OnboardingStatus(
+      consentsGiven: true,
+      profileComplete: true,
+    );
+  }
+}
+
+// -- Harness ---------------------------------------------------------------
+
+const _none = OnboardingStatus(consentsGiven: false, profileComplete: false);
+const _consentsOnly =
+    OnboardingStatus(consentsGiven: true, profileComplete: false);
+const _done = OnboardingStatus(consentsGiven: true, profileComplete: true);
+
+class World {
+  World({
+    bool signedIn = false,
+    OnboardingStatus status = _none,
+    Object? fetchError,
+    this.displayName,
+  })  : auth = FakeAuthRepository(signedIn: signedIn),
+        onboarding = FakeOnboardingRepository(status, error: fetchError) {
+    consent = FakeConsentRepository(onboarding);
+    profile = FakeProfileRepository(onboarding);
+  }
+
+  final FakeAuthRepository auth;
+  final FakeOnboardingRepository onboarding;
+  late final FakeConsentRepository consent;
+  late final FakeProfileRepository profile;
+  final String? displayName;
+}
+
+/// Tall viewport: the ListView-based screens build lazily, so every widget
+/// (including the bottom buttons) must fit on screen to be found.
+void _tallViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(1080, 3000);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+}
+
+Future<void> pumpApp(
+  WidgetTester tester,
+  World world, {
+  Map<String, Object> prefs = const {'app_locale': 'en'},
+}) async {
+  _tallViewport(tester);
+  SharedPreferences.setMockInitialValues(prefs);
+  final sharedPrefs = await SharedPreferences.getInstance();
+  await tester.pumpWidget(ProviderScope(
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(sharedPrefs),
+      authRepositoryProvider.overrideWithValue(world.auth),
+      onboardingRepositoryProvider.overrideWithValue(world.onboarding),
+      consentRepositoryProvider.overrideWithValue(world.consent),
+      profileRepositoryProvider.overrideWithValue(world.profile),
+      meProvider.overrideWith((ref) async => const MeResponse(userId: 'u-1')),
+      displayNameProvider.overrideWith((ref) async => world.displayName),
+    ],
+    child: const AskMediApp(),
+  ));
+  await tester.pumpAndSettle();
+}
+
+Finder inNavBar(String label) =>
+    find.descendant(of: find.byType(NavigationBar), matching: find.text(label));
+
+/// The app's real router, read out of the widget tree's provider container.
+GoRouter routerOf(WidgetTester tester) => ProviderScope.containerOf(
+      tester.element(find.byType(AskMediApp)),
+    ).read(routerProvider);
+
+/// Full location of the top page, including pushed routes (the router's
+/// routeInformationProvider only reports the last go()).
+String locationOf(WidgetTester tester) =>
+    routerOf(tester).routerDelegate.currentConfiguration.last.matchedLocation;
+
+void main() {
+  testWidgets('no saved language -> language screen; English + Continue -> '
+      'sign in', (tester) async {
+    await pumpApp(tester, World(), prefs: const {});
+
+    expect(find.text('Choose your language'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
+
+    await tester.tap(find.text('English'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sign in to AskMedi'), findsOneWidget);
+    expect(find.text('Choose your language'), findsNothing);
+  });
+
+  testWidgets('email code: address goes to the OTP screen via extra, not the '
+      'URL', (tester) async {
+    final world = World();
+    await pumpApp(tester, world);
+    expect(find.text('Sign in to AskMedi'), findsOneWidget);
+
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Email address'), 'a@test.dev');
+    await tester.tap(find.widgetWithText(FilledButton, 'Send code'));
+    await tester.pumpAndSettle();
+
+    expect(world.auth.codeSentTo, 'a@test.dev');
+    expect(find.text('Enter the code'), findsOneWidget);
+    expect(find.text('We sent a 6-digit code to a@test.dev'), findsOneWidget);
+    expect(locationOf(tester), Routes.otp);
+  });
+
+  testWidgets('signed in, no consents -> consent screen', (tester) async {
+    await pumpApp(tester, World(signedIn: true, status: _none));
+
+    expect(find.text('Before we begin'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Agree and continue'),
+        findsOneWidget);
+  });
+
+  testWidgets('signed in, consents ok, no profile -> profile setup',
+      (tester) async {
+    await pumpApp(tester, World(signedIn: true, status: _consentsOnly));
+
+    expect(find.text('Your health profile'), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'Birth year'), findsOneWidget);
+  });
+
+  testWidgets('fully onboarded -> home with four tabs and server status',
+      (tester) async {
+    await pumpApp(
+        tester, World(signedIn: true, status: _done, displayName: 'Asha'));
+
+    for (final label in ['Home', 'History', 'Hospitals', 'Profile']) {
+      expect(inNavBar(label), findsOneWidget, reason: 'tab $label');
+    }
+    expect(find.text('Connected to AskMedi server'), findsOneWidget);
+    expect(find.text('Hello, Asha!'), findsOneWidget);
+  });
+
+  testWidgets('home greets without a name when the profile has none',
+      (tester) async {
+    await pumpApp(tester, World(signedIn: true, status: _done));
+
+    expect(find.text('Hello!'), findsOneWidget);
+  });
+
+  testWidgets('tab placeholders use localised titles (Hindi)', (tester) async {
+    await pumpApp(tester, World(signedIn: true, status: _done),
+        prefs: const {'app_locale': 'hi'});
+    final hi = lookupAppLocalizations(const Locale('hi'));
+
+    await tester.tap(inNavBar(hi.tabHistory));
+    await tester.pumpAndSettle();
+    expect(find.text(hi.comingSoon), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byType(AppBar), matching: find.text(hi.tabHistory)),
+        findsOneWidget);
+
+    await tester.tap(inNavBar(hi.tabHospitals));
+    await tester.pumpAndSettle();
+    expect(
+        find.descendant(
+            of: find.byType(AppBar), matching: find.text(hi.tabHospitals)),
+        findsOneWidget);
+    expect(find.text('History'), findsNothing);
+    expect(find.text('Hospitals'), findsNothing);
+  });
+
+  testWidgets('onboarding advances: consent -> profile -> home',
+      (tester) async {
+    final world = World(signedIn: true, status: _none, displayName: 'Asha');
+    await pumpApp(tester, world);
+    expect(find.text('Before we begin'), findsOneWidget);
+
+    await tester.tap(find.text('I am 18 years or older'));
+    await tester.tap(find.text(
+        'I understand AskMedi is not a doctor and I accept the terms'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Agree and continue'));
+    await tester.pumpAndSettle();
+
+    expect(world.consent.saved?[ConsentPurpose.age18Plus], isTrue);
+    expect(find.text('Your health profile'), findsOneWidget);
+
+    await tester.enterText(find.widgetWithText(TextField, 'Birth year'), '1995');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save and continue'));
+    await tester.pumpAndSettle();
+
+    expect(world.profile.saved?.birthYear, 1995);
+    expect(world.profile.savedLanguage, 'en');
+    expect(inNavBar('Home'), findsOneWidget);
+    expect(find.text('Hello, Asha!'), findsOneWidget);
+  });
+
+  testWidgets('sign out from the Profile tab returns to sign in',
+      (tester) async {
+    await pumpApp(tester, World(signedIn: true, status: _done));
+
+    await tester.tap(inNavBar('Profile'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sign out'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sign in to AskMedi'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+  });
+
+  testWidgets('OAuth deep-link route: onboarded user lands on home, no error '
+      'page', (tester) async {
+    await pumpApp(tester, World(signedIn: true, status: _done));
+
+    routerOf(tester).go(Routes.loginCallback);
+    await tester.pumpAndSettle();
+
+    expect(locationOf(tester), Routes.home);
+    expect(inNavBar('Home'), findsOneWidget);
+    expect(find.textContaining('Exception'), findsNothing);
+  });
+
+  testWidgets('onboarding fetch fails -> splash error with Retry; Retry '
+      'recovers', (tester) async {
+    final world = World(
+        signedIn: true, status: _done, fetchError: Exception('network down'));
+    await pumpApp(tester, world);
+
+    expect(find.text('Something went wrong. Please try again.'),
+        findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Retry'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+
+    world.onboarding.error = null;
+    await tester.tap(find.widgetWithText(FilledButton, 'Retry'));
+    await tester.pumpAndSettle();
+
+    expect(world.onboarding.fetches, 2);
+    expect(find.text('Something went wrong. Please try again.'), findsNothing);
+    expect(inNavBar('Home'), findsOneWidget);
+    expect(find.text('Connected to AskMedi server'), findsOneWidget);
+  });
+}
