@@ -50,4 +50,40 @@ void main() {
     expect(redirectFor(status(), Routes.history), isNull);
     expect(redirectFor(status(), Routes.home), isNull);
   });
+
+  test('OAuth deep link /login-callback: onboarded user is sent to home', () {
+    expect(redirectFor(status(), Routes.loginCallback), Routes.home);
+    // The redirect target must itself be stable (no redirect loop).
+    expect(redirectFor(status(), Routes.home), isNull);
+  });
+
+  test(
+      'OAuth deep link /login-callback: signed in, onboarding not loaded -> '
+      'splash, which is stable', () {
+    final s = status(loaded: false);
+    final target = redirectFor(s, Routes.loginCallback);
+    expect(target, Routes.splash);
+    expect(redirectFor(s, target!), isNull);
+  });
+
+  test('OAuth deep link /login-callback never loops for any status', () {
+    for (final lang in [true, false]) {
+      for (final signedIn in [true, false]) {
+        for (final loaded in [true, false]) {
+          for (final consents in [true, false]) {
+            for (final profile in [true, false]) {
+              final s = status(
+                  lang: lang,
+                  signedIn: signedIn,
+                  loaded: loaded,
+                  consents: consents,
+                  profile: profile);
+              final first = redirectFor(s, Routes.loginCallback);
+              if (first != null) expect(redirectFor(s, first), isNull);
+            }
+          }
+        }
+      }
+    }
+  });
 }
