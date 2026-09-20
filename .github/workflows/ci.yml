@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Least privilege: read-only token; nothing here needs credentials.
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same ref (a new push replaces the old run).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv python install 3.12
+      - run: uv sync
+      - run: uv run ruff check .
+      # TEST_DATABASE_URL is deliberately NOT set here, so the `integration`
+      # tests skip; they run against a real Postgres in the `database` job.
+      - run: uv run pytest -v
+
+  # NOTE ON THE pgTAP TEST: supabase/tests/rls_core_test.sql has so far only
+  # been run as a run-copy against the hosted project, never through
+  # `supabase test db`. The first CI run of this job is therefore its first real
+  # run. If it fails, look first at the `grant all on sequence
+  # __tresults___numb_seq to public` line and at role permissions (the test
+  # switches to the `authenticated` role part-way through).
+  #
+  # The repo has no supabase/config.toml (schema changes were applied to the
+  # hosted project directly), so it is generated here in CI only. This proves
+  # the migrations replay from scratch on a clean local stack.
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Create throwaway Supabase config (not committed)
+        run: |
+          if [ ! -f supabase/config.toml ]; then
+            supabase init
+          fi
+      # The full default stack is started on purpose. Excluding services with
+      # `-x` is possible, but service names differ between CLI versions and the
+      # auth schema (needed by the migrations) is created by the auth service,
+      # so correctness is preferred over start-up speed.
+      - run: supabase start
+      # Runs every pgTAP file under supabase/tests/.
+      - run: supabase test db
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv python install 3.12
+      - working-directory: backend
+        run: uv sync
+      - name: Backend integration tests against the local stack
+        working-directory: backend
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: uv run pytest -m integration -v
+
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.5
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      # lib/core/l10n/gen/ is git-ignored, so generate it before analyze/test.
+      - run: flutter gen-l10n
+      - run: flutter analyze
+      - run: flutter test
