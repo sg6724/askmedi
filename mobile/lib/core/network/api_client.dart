@@ -47,6 +47,12 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 });
 
 /// Verifies the app -> Vercel -> JWT path end-to-end (shown on Home).
-final meProvider = FutureProvider<MeResponse>(
+///
+/// autoDispose: per-session data, dropped with Home on sign-out so the next
+/// account re-checks the server. `retry` is off: Riverpod 3's default (10
+/// attempts, ~38 s of backoff) would hide the "server unreachable" tile and
+/// its Retry button for minutes and hammer the backend.
+final meProvider = FutureProvider.autoDispose<MeResponse>(
   (ref) => ref.watch(apiClientProvider).getMe(),
+  retry: (_, _) => null,
 );

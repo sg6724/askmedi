@@ -23,7 +23,9 @@ final appStatusProvider = Provider<AppStatus>((ref) {
   final onboarding = ref.watch(onboardingStatusProvider).value;
   return AppStatus(
     languageChosen: ref.watch(localeControllerProvider) != null,
-    signedIn: ref.watch(signedInProvider).value ?? false,
+    // Falls back to the synchronous session until the auth stream emits, so a
+    // returning user is never read as signed out on the first frame.
+    signedIn: ref.watch(effectiveSignedInProvider),
     onboardingLoaded: onboarding != null,
     consentsGiven: onboarding?.consentsGiven ?? false,
     profileComplete: onboarding?.profileComplete ?? false,

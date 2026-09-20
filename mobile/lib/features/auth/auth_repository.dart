@@ -67,3 +67,19 @@ final signedInProvider = StreamProvider<bool>((ref) async* {
   yield repo.isSignedIn;
   yield* repo.watchSignedIn();
 });
+
+/// Whether a user is signed in, usable from the very first frame.
+///
+/// Supabase knows the persisted session synchronously ([AuthRepository.isSignedIn])
+/// but [signedInProvider]'s stream only emits later. Until it has a value, trust
+/// the synchronous session so a returning user is not treated as signed out (and
+/// shown the sign-in screen) on cold start; any later stream value, including
+/// `false`, wins. Never throws while the stream is loading or errored.
+///
+/// A plain `Provider<bool>` only notifies dependents when the value changes, so
+/// the stream catching up with the same answer does not rebuild (or refetch)
+/// anything downstream.
+final effectiveSignedInProvider = Provider<bool>((ref) {
+  final streamed = ref.watch(signedInProvider).value;
+  return streamed ?? ref.read(authRepositoryProvider).isSignedIn;
+});

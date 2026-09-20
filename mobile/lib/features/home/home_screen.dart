@@ -6,14 +6,21 @@ import '../../core/network/api_client.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 
-final displayNameProvider = FutureProvider<String?>((ref) async {
-  final row = await ref
-      .watch(supabaseClientProvider)
-      .from('profiles')
-      .select('display_name')
-      .maybeSingle();
-  return row?['display_name'] as String?;
-});
+/// Per-user data: autoDispose so it is dropped with Home on sign-out and a
+/// different account signing in on the same device never sees a cached name.
+/// `retry` is off (Riverpod 3 would back off for ~38 s); Home degrades to the
+/// name-less greeting instead.
+final displayNameProvider = FutureProvider.autoDispose<String?>(
+  (ref) async {
+    final row = await ref
+        .watch(supabaseClientProvider)
+        .from('profiles')
+        .select('display_name')
+        .maybeSingle();
+    return row?['display_name'] as String?;
+  },
+  retry: (_, _) => null,
+);
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});

@@ -52,7 +52,9 @@ final onboardingRepositoryProvider = Provider<OnboardingRepository>(
 /// see the error. Failing immediately lets it show a retry button instead.
 final onboardingStatusProvider = FutureProvider<OnboardingStatus?>(
   (ref) async {
-    final signedIn = ref.watch(signedInProvider).value ?? false;
+    // Falls back to the synchronous session until the auth stream emits (and
+    // does not rebuild/refetch when the stream then agrees).
+    final signedIn = ref.watch(effectiveSignedInProvider);
     if (!signedIn) return null;
     return ref.watch(onboardingRepositoryProvider).fetch();
   },

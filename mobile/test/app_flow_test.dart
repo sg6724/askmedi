@@ -7,6 +7,7 @@ import 'package:askmedi/core/providers.dart';
 import 'package:askmedi/core/routing/router.dart';
 import 'package:askmedi/core/routing/routes.dart';
 import 'package:askmedi/features/auth/auth_repository.dart';
+import 'package:askmedi/features/auth/sign_in_screen.dart';
 import 'package:askmedi/features/consent/consent_purpose.dart';
 import 'package:askmedi/features/consent/consent_repository.dart';
 import 'package:askmedi/features/home/home_screen.dart';
@@ -121,6 +122,7 @@ class World {
     OnboardingStatus status = _none,
     Object? fetchError,
     this.displayName,
+    this.meError,
   })  : auth = FakeAuthRepository(signedIn: signedIn),
         onboarding = FakeOnboardingRepository(status, error: fetchError) {
     consent = FakeConsentRepository(onboarding);
@@ -131,7 +133,15 @@ class World {
   final FakeOnboardingRepository onboarding;
   late final FakeConsentRepository consent;
   late final FakeProfileRepository profile;
-  final String? displayName;
+
+  /// Read by the `displayNameProvider` override each time it is (re)computed.
+  String? displayName;
+
+  /// When set, the `meProvider` override throws it instead of answering.
+  Object? meError;
+
+  /// How many times the `meProvider` override has been computed.
+  int meCalls = 0;
 }
 
 /// Tall viewport: the ListView-based screens build lazily, so every widget
@@ -146,6 +156,7 @@ Future<void> pumpApp(
   WidgetTester tester,
   World world, {
   Map<String, Object> prefs = const {'app_locale': 'en'},
+  bool settle = true,
 }) async {
   _tallViewport(tester);
   SharedPreferences.setMockInitialValues(prefs);
@@ -157,12 +168,18 @@ Future<void> pumpApp(
       onboardingRepositoryProvider.overrideWithValue(world.onboarding),
       consentRepositoryProvider.overrideWithValue(world.consent),
       profileRepositoryProvider.overrideWithValue(world.profile),
-      meProvider.overrideWith((ref) async => const MeResponse(userId: 'u-1')),
+      // Overrides keep the real providers' autoDispose/retry behaviour, so
+      // these exercise the production provider configuration.
+      meProvider.overrideWith((ref) async {
+        world.meCalls++;
+        if (world.meError != null) throw world.meError!;
+        return const MeResponse(userId: 'u-1');
+      }),
       displayNameProvider.overrideWith((ref) async => world.displayName),
     ],
     child: const AskMediApp(),
   ));
-  await tester.pumpAndSettle();
+  if (settle) await tester.pumpAndSettle();
 }
 
 Finder inNavBar(String label) =>
@@ -340,5 +357,78 @@ void main() {
     expect(find.text('Something went wrong. Please try again.'), findsNothing);
     expect(inNavBar('Home'), findsOneWidget);
     expect(find.text('Connected to AskMedi server'), findsOneWidget);
+  });
+
+  testWidgets('returning signed-in user never sees the sign-in screen on '
+      'cold start', (tester) async {
+    // Supabase reports the persisted session synchronously (isSignedIn) but
+    // its auth stream only emits later; the fake mirrors that: isSignedIn is
+    // true, watchSignedIn() has not emitted anything.
+    final world = World(signedIn: true, status: _done, displayName: 'Asha');
+    await pumpApp(tester, world, settle: false);
+    expect(find.byType(SignInScreen), findsNothing, reason: 'after pumpWidget');
+
+    await tester.pump();
+    expect(find.byType(SignInScreen), findsNothing, reason: 'after pump()');
+    await tester.pump(Duration.zero);
+    expect(find.byType(SignInScreen), findsNothing, reason: 'after pump(0)');
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(find.byType(SignInScreen), findsNothing, reason: 'frame $i');
+    }
+
+    await tester.pumpAndSettle();
+    expect(find.byType(SignInScreen), findsNothing);
+    expect(inNavBar('Home'), findsOneWidget);
+    // The status is fetched once, not again when the auth stream catches up.
+    expect(world.onboarding.fetches, 1);
+  });
+
+  testWidgets('account switch: Home never shows the previous account data',
+      (tester) async {
+    final world = World(signedIn: true, status: _done, displayName: 'Asha');
+    await pumpApp(tester, world);
+    expect(find.text('Hello, Asha!'), findsOneWidget);
+    expect(world.meCalls, 1);
+
+    await tester.tap(inNavBar('Profile'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sign out'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sign in to AskMedi'), findsOneWidget);
+
+    // A different user signs in on the same device, without an app restart.
+    world.displayName = 'Bela';
+    world.auth.setSignedIn(true);
+    await tester.pumpAndSettle();
+
+    expect(inNavBar('Home'), findsOneWidget);
+    expect(find.text('Hello, Bela!'), findsOneWidget);
+    expect(find.text('Hello, Asha!'), findsNothing);
+    // The server check is recomputed for the new session, not reused.
+    expect(world.meCalls, 2);
+  });
+
+  testWidgets('server unreachable: Home shows the error tile and Retry '
+      'promptly (no long retry backoff)', (tester) async {
+    final world = World(
+        signedIn: true, status: _done, meError: Exception('offline'));
+    await pumpApp(tester, world, settle: false);
+
+    // Bounded: 1.5 s of fake time. Riverpod 3's default retry would still be
+    // backing off (200 ms, 400 ms, 800 ms, ...) and show only a spinner.
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expect(find.text("Can't reach the server"), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'Retry'), findsOneWidget);
+    expect(world.meCalls, 1);
+
+    world.meError = null;
+    await tester.tap(find.widgetWithText(TextButton, 'Retry'));
+    await tester.pumpAndSettle();
+    expect(find.text('Connected to AskMedi server'), findsOneWidget);
+    expect(world.meCalls, 2);
   });
 }
