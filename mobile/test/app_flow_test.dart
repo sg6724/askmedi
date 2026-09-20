@@ -359,6 +359,36 @@ void main() {
     expect(find.text('Connected to AskMedi server'), findsOneWidget);
   });
 
+  testWidgets('failed refetch after saving consent -> splash error + Retry, '
+      'not back to consent; Retry moves on to profile', (tester) async {
+    final world = World(signedIn: true, status: _none);
+    await pumpApp(tester, world);
+    expect(find.text('Before we begin'), findsOneWidget);
+
+    // The save itself succeeds, but the refetch that follows it fails.
+    world.onboarding.error = Exception('network down');
+    await tester.tap(find.text('I am 18 years or older'));
+    await tester.tap(find.text(
+        'I understand AskMedi is not a doctor and I accept the terms'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Agree and continue'));
+    await tester.pumpAndSettle();
+
+    expect(world.consent.saved?[ConsentPurpose.age18Plus], isTrue);
+    expect(find.text('Something went wrong. Please try again.'),
+        findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Retry'), findsOneWidget);
+    expect(find.text('Before we begin'), findsNothing);
+
+    world.onboarding.error = null; // now: consents given, profile missing
+    await tester.tap(find.widgetWithText(FilledButton, 'Retry'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Something went wrong. Please try again.'), findsNothing);
+    expect(find.text('Your health profile'), findsOneWidget);
+    expect(find.text('Before we begin'), findsNothing);
+  });
+
   testWidgets('returning signed-in user never sees the sign-in screen on '
       'cold start', (tester) async {
     // Supabase reports the persisted session synchronously (isSignedIn) but

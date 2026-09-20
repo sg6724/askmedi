@@ -20,7 +20,11 @@ import 'app_status.dart';
 import 'routes.dart';
 
 final appStatusProvider = Provider<AppStatus>((ref) {
-  final onboarding = ref.watch(onboardingStatusProvider).value;
+  final onboardingAsync = ref.watch(onboardingStatusProvider);
+  // A failed refetch keeps the previous (stale) value on the AsyncError, so
+  // `.value` alone would bounce the user back to a step they already finished.
+  // Treat any error as "not loaded": the splash then offers Retry.
+  final onboarding = onboardingAsync.hasError ? null : onboardingAsync.value;
   return AppStatus(
     languageChosen: ref.watch(localeControllerProvider) != null,
     // Falls back to the synchronous session until the auth stream emits, so a
