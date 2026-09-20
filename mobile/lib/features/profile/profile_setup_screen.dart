@@ -25,9 +25,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   final _conditions = <String>[];
   final _medicines = <String>[];
   final _allergies = <String>[];
-  final _conditionsField = GlobalKey<ChipListFieldState>();
-  final _medicinesField = GlobalKey<ChipListFieldState>();
-  final _allergiesField = GlobalKey<ChipListFieldState>();
+  // Owned here, not by ChipListField: the form is a lazy ListView, so a field
+  // scrolled far off screen is disposed and would take its typed text with it.
+  final _conditionsInput = TextEditingController();
+  final _medicinesInput = TextEditingController();
+  final _allergiesInput = TextEditingController();
   String? _birthYearError;
   String? _error;
   bool _busy = false;
@@ -36,6 +38,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   void dispose() {
     _name.dispose();
     _birthYear.dispose();
+    _conditionsInput.dispose();
+    _medicinesInput.dispose();
+    _allergiesInput.dispose();
     super.dispose();
   }
 
@@ -50,11 +55,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     final l10n = AppLocalizations.of(context);
     // Text typed but not yet added (no Enter / + tap) must not be silently
     // dropped: commit it before validating and saving.
-    _conditionsField.currentState?.commitPending();
-    _medicinesField.currentState?.commitPending();
-    _allergiesField.currentState?.commitPending();
+    commitChipText(_conditions, _conditionsInput);
+    commitChipText(_medicines, _medicinesInput);
+    commitChipText(_allergies, _allergiesInput);
     final err = validateBirthYear(_birthYear.text, DateTime.now());
     setState(() {
+      // Rebuilds the chip lists (mutated above) as well as the year error.
       _birthYearError = switch (err) {
         BirthYearError.invalid => l10n.birthYearInvalid,
         BirthYearError.under18 => l10n.birthYearUnder18,
@@ -142,19 +148,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           ],
           const SizedBox(height: 16),
           ChipListField(
-              key: _conditionsField,
               label: l10n.conditionsLabel,
               hint: l10n.addItemHint,
+              controller: _conditionsInput,
               items: _conditions),
           ChipListField(
-              key: _medicinesField,
               label: l10n.medicinesLabel,
               hint: l10n.addItemHint,
+              controller: _medicinesInput,
               items: _medicines),
           ChipListField(
-              key: _allergiesField,
               label: l10n.allergiesLabel,
               hint: l10n.addItemHint,
+              controller: _allergiesInput,
               items: _allergies),
           if (_error != null)
             Text(_error!, style: const TextStyle(color: AppColors.danger)),
@@ -169,44 +175,44 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }
 }
 
+/// Adds the text in [controller] to [items] and clears the controller. The one
+/// place that defines what a valid chip is: trimmed, non-empty, at most 120
+/// characters, no duplicates. Returns whether an item was added (invalid text is
+/// left in the field). Used by the field's Enter / + action and by the screen's
+/// save, which commits text that was typed but never added.
+bool commitChipText(List<String> items, TextEditingController controller) {
+  final v = controller.text.trim();
+  if (v.isEmpty || v.length > 120 || items.contains(v)) return false;
+  items.add(v);
+  controller.clear();
+  return true;
+}
+
 /// Free-text list: type, then press Enter or tap + to add a chip; tap a chip's
-/// x to remove it. The parent calls [ChipListFieldState.commitPending] before
-/// saving so text that was typed but not yet added is not lost.
+/// x to remove it. The text controller is owned by the parent so uncommitted
+/// text outlives this widget being scrolled out of a lazy list.
 class ChipListField extends StatefulWidget {
   const ChipListField({
     super.key,
     required this.label,
     required this.hint,
+    required this.controller,
     required this.items,
   });
 
   final String label;
   final String hint;
+  final TextEditingController controller;
   final List<String> items;
 
   @override
-  State<ChipListField> createState() => ChipListFieldState();
+  State<ChipListField> createState() => _ChipListFieldState();
 }
 
-class ChipListFieldState extends State<ChipListField> {
-  final _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+class _ChipListFieldState extends State<ChipListField> {
+  void _add() {
+    if (commitChipText(widget.items, widget.controller)) setState(() {});
   }
-
-  void _add(String value) {
-    final v = value.trim();
-    if (v.isEmpty || v.length > 120 || widget.items.contains(v)) return;
-    setState(() => widget.items.add(v));
-    _controller.clear();
-  }
-
-  /// Adds the text currently in the field (trimmed, same rules as Enter/+).
-  /// No-op when the field is empty.
-  void commitPending() => _add(_controller.text);
 
   @override
   Widget build(BuildContext context) {
@@ -217,16 +223,16 @@ class ChipListFieldState extends State<ChipListField> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextField(
-            controller: _controller,
+            controller: widget.controller,
             textInputAction: TextInputAction.done,
-            onSubmitted: _add,
+            onSubmitted: (_) => _add(),
             decoration: InputDecoration(
               labelText: widget.label,
               hintText: widget.hint,
               suffixIcon: IconButton(
                 icon: const Icon(Icons.add),
                 tooltip: l10n.addItem,
-                onPressed: () => _add(_controller.text),
+                onPressed: _add,
               ),
             ),
           ),

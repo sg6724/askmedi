@@ -38,10 +38,16 @@ void main() {
   Future<void> pumpScreen(
     WidgetTester tester, {
     Map<String, Object> prefsValues = const {},
+    Size viewport = const Size(1080, 3000),
+    double textScale = 1.0,
   }) async {
-    tester.view.physicalSize = const Size(1080, 3000);
+    tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
+    if (textScale != 1.0) {
+      tester.platformDispatcher.textScaleFactorTestValue = textScale;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    }
 
     SharedPreferences.setMockInitialValues(prefsValues);
     final prefs = await SharedPreferences.getInstance();
@@ -153,5 +159,65 @@ void main() {
     final field = tester.widget<TextField>(
         chipField('Known conditions (e.g. diabetes)'));
     expect(field.controller!.text, isEmpty);
+  });
+
+  testWidgets('pending text that duplicates a chip, or is blank, is not added',
+      (tester) async {
+    await pumpScreen(tester);
+
+    await tester.enterText(
+        chipField('Known conditions (e.g. diabetes)'), 'Diabetes');
+    await tester.tap(find.byIcon(Icons.add).first);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        chipField('Known conditions (e.g. diabetes)'), '  Diabetes ');
+    await tester.enterText(chipField('Allergies'), '   ');
+    await enterBirthYear(tester, '1995');
+    await tester.tap(find.text('Save and continue'));
+    await tester.pumpAndSettle();
+
+    expect(repo.calls, hasLength(1));
+    expect(repo.calls.single.profile.conditions, ['Diabetes']);
+    expect(repo.calls.single.profile.allergies, isEmpty);
+  });
+
+  testWidgets(
+      'pending text survives its field being scrolled out of the lazy list',
+      (tester) async {
+    // Tiny viewport + 3x text: the ListView builds lazily, so an unfocused chip
+    // field scrolled beyond the cache extent (250 px) is disposed with its State.
+    await pumpScreen(tester,
+        viewport: const Size(360, 320), textScale: 3.0);
+    final conditions = chipField('Known conditions (e.g. diabetes)');
+    final scrollable = find.byType(Scrollable).first;
+
+    // At this size even the year field starts below the cache extent.
+    await tester.scrollUntilVisible(
+        find.widgetWithText(TextField, 'Birth year'), 100,
+        scrollable: scrollable);
+    await enterBirthYear(tester, '1995');
+    await tester.scrollUntilVisible(conditions, 100, scrollable: scrollable);
+    await tester.enterText(conditions, 'Diabetes');
+    // A focused EditableText keeps itself alive when scrolled away. The user
+    // dismissing the keyboard / tapping elsewhere drops that focus.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+
+    await tester.scrollUntilVisible(
+        find.text('Save and continue'), 100, scrollable: scrollable);
+    await tester.pumpAndSettle();
+
+    // Prove the premise: the conditions field really is gone from the tree.
+    expect(
+        find.widgetWithText(
+            TextField, 'Known conditions (e.g. diabetes)', skipOffstage: false),
+        findsNothing);
+
+    await tester.tap(find.text('Save and continue'));
+    await tester.pumpAndSettle();
+
+    expect(repo.calls, hasLength(1));
+    expect(repo.calls.single.profile.conditions, ['Diabetes']);
+    expect(saved, 1);
   });
 }
