@@ -2,7 +2,7 @@ import time
 
 import jwt
 import pytest
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 
 from askmedi.adapters.supabase_jwt import SupabaseJwtVerifier
 from askmedi.domain.auth import InvalidToken
@@ -67,3 +67,36 @@ def test_missing_sub_rejected(verifier, keypair):
 def test_garbage_rejected(verifier):
     with pytest.raises(InvalidToken):
         verifier.verify("not-a-jwt")
+
+
+def test_es256_token_verifies():
+    # Supabase issues ES256 access tokens; pin that this algorithm keeps working.
+    private = ec.generate_private_key(ec.SECP256R1())
+    now = int(time.time())
+    token = jwt.encode(
+        {"sub": "user-es", "email": "es@test.dev", "aud": AUD, "iss": ISSUER,
+         "iat": now, "exp": now + 3600},
+        private,
+        algorithm="ES256",
+    )
+    es_verifier = SupabaseJwtVerifier(
+        issuer=ISSUER, audience=AUD, key_resolver=lambda _t: private.public_key()
+    )
+    user = es_verifier.verify(token)
+    assert user.user_id == "user-es"
+    assert user.email == "es@test.dev"
+
+
+def test_empty_sub_rejected(verifier, keypair):
+    with pytest.raises(InvalidToken):
+        verifier.verify(make_token(keypair[0], sub=""))
+
+
+def test_blank_sub_rejected(verifier, keypair):
+    with pytest.raises(InvalidToken):
+        verifier.verify(make_token(keypair[0], sub="   "))
+
+
+def test_non_string_sub_rejected(verifier, keypair):
+    with pytest.raises(InvalidToken):
+        verifier.verify(make_token(keypair[0], sub=123))

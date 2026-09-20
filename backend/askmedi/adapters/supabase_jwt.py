@@ -39,4 +39,7 @@ class SupabaseJwtVerifier:
             )
         except jwt.PyJWTError as exc:
             raise InvalidToken(str(exc)) from exc
-        return AuthUser(user_id=claims["sub"], email=claims.get("email"), claims=claims)
+        sub = claims["sub"]
+        if not isinstance(sub, str) or not sub.strip():
+            raise InvalidToken("token subject is missing or empty")
+        return AuthUser(user_id=sub, email=claims.get("email"), claims=claims)

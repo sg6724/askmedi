@@ -7,7 +7,10 @@ BACKEND_ROOT = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=BACKEND_ROOT / ".env", extra="ignore")
+    # hide_input_in_errors: validation errors must never echo env values (DATABASE_URL has a password).
+    model_config = SettingsConfigDict(
+        env_file=BACKEND_ROOT / ".env", extra="ignore", hide_input_in_errors=True
+    )
 
     supabase_url: str
     database_url: str
