@@ -47,6 +47,7 @@
   "medicinesLabel": "Medicines you take regularly",
   "allergiesLabel": "Allergies",
   "addItemHint": "Type and press Enter to add",
+  "addItem": "Add",
   "saveAndContinue": "Save and continue",
   "tabHome": "Home",
   "tabHistory": "History",

@@ -46,6 +46,7 @@
   "medicinesLabel": "नियमित रूप से ली जाने वाली दवाएँ",
   "allergiesLabel": "एलर्जी",
   "addItemHint": "लिखें और जोड़ने के लिए Enter दबाएँ",
+  "addItem": "जोड़ें",
   "saveAndContinue": "सहेजें और आगे बढ़ें",
   "tabHome": "होम",
   "tabHistory": "इतिहास",

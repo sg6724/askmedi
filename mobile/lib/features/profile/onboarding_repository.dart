@@ -46,8 +46,15 @@ final onboardingRepositoryProvider = Provider<OnboardingRepository>(
 );
 
 /// null while signed out. Invalidate after saving consents or the profile.
-final onboardingStatusProvider = FutureProvider<OnboardingStatus?>((ref) async {
-  final signedIn = ref.watch(signedInProvider).value ?? false;
-  if (!signedIn) return null;
-  return ref.watch(onboardingRepositoryProvider).fetch();
-});
+///
+/// `retry` returns null: Riverpod 3 otherwise retries failed providers with
+/// backoff and keeps them in AsyncLoading, so the splash retry UI would never
+/// see the error. Failing immediately lets it show a retry button instead.
+final onboardingStatusProvider = FutureProvider<OnboardingStatus?>(
+  (ref) async {
+    final signedIn = ref.watch(signedInProvider).value ?? false;
+    if (!signedIn) return null;
+    return ref.watch(onboardingRepositoryProvider).fetch();
+  },
+  retry: (retryCount, error) => null,
+);

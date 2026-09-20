@@ -5,6 +5,13 @@ import '../../core/providers.dart';
 import 'health_profile.dart';
 
 abstract interface class ProfileRepository {
+  /// FIRST-TIME ONBOARDING ONLY. Deletes and re-inserts the condition, medicine
+  /// and allergy lists non-atomically (the profile row, with
+  /// `onboarding_completed_at`, is written last). A dropped connection midway
+  /// would leave the lists wiped or partly rewritten, which is harmless for a
+  /// first-time flow but not for editing stored data. A later profile-EDIT flow
+  /// must not reuse this: use a transactional RPC (e.g. `replace_health_profile`)
+  /// or insert-then-delete instead.
   Future<void> saveOnboardingProfile(HealthProfile profile, {required String language});
 }
 

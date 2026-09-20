@@ -25,6 +25,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   final _conditions = <String>[];
   final _medicines = <String>[];
   final _allergies = <String>[];
+  final _conditionsField = GlobalKey<ChipListFieldState>();
+  final _medicinesField = GlobalKey<ChipListFieldState>();
+  final _allergiesField = GlobalKey<ChipListFieldState>();
   String? _birthYearError;
   String? _error;
   bool _busy = false;
@@ -45,6 +48,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context);
+    // Text typed but not yet added (no Enter / + tap) must not be silently
+    // dropped: commit it before validating and saving.
+    _conditionsField.currentState?.commitPending();
+    _medicinesField.currentState?.commitPending();
+    _allergiesField.currentState?.commitPending();
     final err = validateBirthYear(_birthYear.text, DateTime.now());
     setState(() {
       _birthYearError = switch (err) {
@@ -133,9 +141,21 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             ]),
           ],
           const SizedBox(height: 16),
-          _ChipListField(label: l10n.conditionsLabel, hint: l10n.addItemHint, items: _conditions),
-          _ChipListField(label: l10n.medicinesLabel, hint: l10n.addItemHint, items: _medicines),
-          _ChipListField(label: l10n.allergiesLabel, hint: l10n.addItemHint, items: _allergies),
+          ChipListField(
+              key: _conditionsField,
+              label: l10n.conditionsLabel,
+              hint: l10n.addItemHint,
+              items: _conditions),
+          ChipListField(
+              key: _medicinesField,
+              label: l10n.medicinesLabel,
+              hint: l10n.addItemHint,
+              items: _medicines),
+          ChipListField(
+              key: _allergiesField,
+              label: l10n.allergiesLabel,
+              hint: l10n.addItemHint,
+              items: _allergies),
           if (_error != null)
             Text(_error!, style: const TextStyle(color: AppColors.danger)),
           const SizedBox(height: 24),
@@ -149,19 +169,26 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }
 }
 
-/// Free-text list: type, press Enter to add a chip, tap a chip's x to remove it.
-class _ChipListField extends StatefulWidget {
-  const _ChipListField({required this.label, required this.hint, required this.items});
+/// Free-text list: type, then press Enter or tap + to add a chip; tap a chip's
+/// x to remove it. The parent calls [ChipListFieldState.commitPending] before
+/// saving so text that was typed but not yet added is not lost.
+class ChipListField extends StatefulWidget {
+  const ChipListField({
+    super.key,
+    required this.label,
+    required this.hint,
+    required this.items,
+  });
 
   final String label;
   final String hint;
   final List<String> items;
 
   @override
-  State<_ChipListField> createState() => _ChipListFieldState();
+  State<ChipListField> createState() => ChipListFieldState();
 }
 
-class _ChipListFieldState extends State<_ChipListField> {
+class ChipListFieldState extends State<ChipListField> {
   final _controller = TextEditingController();
 
   @override
@@ -177,8 +204,13 @@ class _ChipListFieldState extends State<_ChipListField> {
     _controller.clear();
   }
 
+  /// Adds the text currently in the field (trimmed, same rules as Enter/+).
+  /// No-op when the field is empty.
+  void commitPending() => _add(_controller.text);
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -188,7 +220,15 @@ class _ChipListFieldState extends State<_ChipListField> {
             controller: _controller,
             textInputAction: TextInputAction.done,
             onSubmitted: _add,
-            decoration: InputDecoration(labelText: widget.label, hintText: widget.hint),
+            decoration: InputDecoration(
+              labelText: widget.label,
+              hintText: widget.hint,
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: l10n.addItem,
+                onPressed: () => _add(_controller.text),
+              ),
+            ),
           ),
           Wrap(
             spacing: 6,

@@ -102,4 +102,56 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Are you currently pregnant?'), findsOneWidget);
   });
+
+  Finder chipField(String label) => find.widgetWithText(TextField, label);
+
+  testWidgets('pending condition text is saved without pressing Enter',
+      (tester) async {
+    await pumpScreen(tester);
+
+    await tester.enterText(
+        chipField('Known conditions (e.g. diabetes)'), 'Diabetes');
+    await enterBirthYear(tester, '1995');
+    await tester.tap(find.text('Save and continue'));
+    await tester.pumpAndSettle();
+
+    expect(repo.calls, hasLength(1));
+    expect(repo.calls.single.profile.conditions, ['Diabetes']);
+    expect(saved, 1);
+  });
+
+  testWidgets('pending medicine and allergy text are saved without pressing Enter',
+      (tester) async {
+    await pumpScreen(tester);
+
+    await tester.enterText(
+        chipField('Known conditions (e.g. diabetes)'), 'Diabetes');
+    await tester.enterText(
+        chipField('Medicines you take regularly'), 'Metformin');
+    await tester.enterText(chipField('Allergies'), 'Penicillin');
+    await enterBirthYear(tester, '1995');
+    await tester.tap(find.text('Save and continue'));
+    await tester.pumpAndSettle();
+
+    expect(repo.calls, hasLength(1));
+    final profile = repo.calls.single.profile;
+    expect(profile.conditions, ['Diabetes']);
+    expect(profile.medicines, ['Metformin']);
+    expect(profile.allergies, ['Penicillin']);
+  });
+
+  testWidgets('tapping the add icon adds a chip and clears the field',
+      (tester) async {
+    await pumpScreen(tester);
+
+    await tester.enterText(
+        chipField('Known conditions (e.g. diabetes)'), 'Diabetes');
+    await tester.tap(find.byIcon(Icons.add).first);
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(InputChip, 'Diabetes'), findsOneWidget);
+    final field = tester.widget<TextField>(
+        chipField('Known conditions (e.g. diabetes)'));
+    expect(field.controller!.text, isEmpty);
+  });
 }
