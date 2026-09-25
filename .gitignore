@@ -39,3 +39,7 @@ supabase/.env
 
 # Local toolchains (Flutter SDK, pub cache) — kept on D:, never committed
 .tools/
+
+# JVM crash logs (low-memory crashes of local Java tools)
+hs_err_pid*.log
+replay_pid*.log
