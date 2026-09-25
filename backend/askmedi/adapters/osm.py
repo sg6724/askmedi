@@ -183,7 +183,7 @@ class OsmDirectory:
         async with self._client() as client:
             for url in self._overpass_urls:
                 try:
-                    resp = await client.post(url, data={"data": query})
+                    resp = await client.post(url, data={"data": query}, timeout=8.0)
                     resp.raise_for_status()
                     return parse_overpass(resp.json())
                 except (httpx.HTTPError, ValueError) as exc:
