@@ -2,6 +2,12 @@
 # Ordered fallback lists per task. First entry = primary.
 tasks:
   normalise: [groq/openai/gpt-oss-20b, gemini/gemini-2.5-flash]
-  reason:    [gemini/gemini-2.5-flash, groq/openai/gpt-oss-120b]
-  respond:   [gemini/gemini-2.5-flash, groq/openai/gpt-oss-120b]
-  vision:    [gemini/gemini-2.5-flash, groq/qwen/qwen3.8-27b]
+  # 2026-09-25: the Gemini free tier allows only 20 requests/day per model, and Google Search
+  # grounding on the free tier works only on gemini-2.5-flash. So chat text goes to Groq first and
+  # gemini-2.5-flash is kept for grounded search; vision uses gemini-3.5-flash (separate quota).
+  reason:    [groq/openai/gpt-oss-120b, gemini/gemini-3.5-flash]
+  respond:   [groq/openai/gpt-oss-120b, gemini/gemini-3.5-flash]
+  # vision: Gemini entries are used for strip/report reading (images and PDFs via Gemini REST).
+  vision:    [gemini/gemini-3.5-flash, gemini/gemini-3.5-flash-lite, gemini/gemini-2.5-flash, groq/qwen/qwen3.8-27b]
+  # search: Gemini with Google Search grounding (Gemini REST only); MedlinePlus search is the fallback.
+  search:    [gemini/gemini-2.5-flash, gemini/gemini-3.5-flash]

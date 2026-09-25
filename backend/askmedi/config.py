@@ -22,6 +22,20 @@ class Settings(BaseSettings):
     models_config_path: Path = BACKEND_ROOT / "config" / "models.yaml"
     cors_origin_regex: str = DEFAULT_CORS_ORIGIN_REGEX
 
+    # Gemini REST (grounded web search + vision). LiteLLM reads GEMINI_API_KEY from the env too.
+    gemini_api_key: str | None = None
+
+    # ElevenLabs voice. When the key is unset, /voice/* answer 503 voice_unavailable.
+    elevenlabs_api_key: str | None = None
+    elevenlabs_stt_model: str = "scribe_v1"
+    # eleven_v3 covers Hindi and Marathi (flash/multilingual v2 do not cover Marathi).
+    elevenlabs_tts_model: str = "eleven_v3"
+    elevenlabs_voice_id: str = "JBFqnCBsd6RMkjVDRZzb"
+    elevenlabs_output_format: str = "mp3_44100_128"
+
+    # OpenStreetMap (Nominatim/Overpass) usage policy requires an identifying User-Agent.
+    osm_user_agent: str = "AskMedi/0.1 (student project)"
+
     @property
     def supabase_issuer(self) -> str:
         return f"{self.supabase_url.rstrip('/')}/auth/v1"

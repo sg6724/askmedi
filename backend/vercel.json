@@ -2,6 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["bom1"],
   "functions": {
-    "index.py": { "includeFiles": "config/**" }
+    "index.py": { "includeFiles": "{config/**,askmedi/safety/rules/**}" }
   }
 }
