@@ -8,8 +8,10 @@ tasks:
   # Groq free tier: 8k tokens/minute per model (web search uses ~5k). gpt-oss-120b writes correct
   # hi/mr JSON in ~2 s; a 429 fails over in milliseconds to Gemini, then to gpt-oss-20b (fast, but
   # it tends to answer in English, so it is last).
-  reason:    [groq/openai/gpt-oss-120b, gemini/gemini-3.5-flash, groq/openai/gpt-oss-20b]
-  respond:   [groq/openai/gpt-oss-120b, gemini/gemini-3.5-flash, groq/openai/gpt-oss-20b]
+  # Each model has its own daily budget (Groq free: 200k tokens/day; Gemini free: 20 requests/day),
+  # so more fallbacks = more free capacity. flash-lite answers when flash is out of quota.
+  reason:    [groq/openai/gpt-oss-120b, gemini/gemini-3.5-flash, gemini/gemini-3.5-flash-lite, groq/openai/gpt-oss-20b]
+  respond:   [groq/openai/gpt-oss-120b, gemini/gemini-3.5-flash, gemini/gemini-3.5-flash-lite, groq/openai/gpt-oss-20b]
   # vision: Gemini entries are used for strip/report reading (images and PDFs via Gemini REST).
   vision:    [gemini/gemini-3.5-flash, gemini/gemini-3.5-flash-lite, gemini/gemini-2.5-flash, groq/qwen/qwen3.8-27b]
   # web_search: Groq gpt-oss with the built-in browser_search tool (Groq REST). Free tier, no
