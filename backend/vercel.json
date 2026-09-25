@@ -1,7 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["bom1"],
+  "regions": [
+    "bom1"
+  ],
   "functions": {
-    "index.py": { "includeFiles": "{config/**,askmedi/safety/rules/**}" }
+    "index.py": {
+      "includeFiles": "{config/**,askmedi/safety/rules/**}",
+      "maxDuration": 60
+    }
   }
 }

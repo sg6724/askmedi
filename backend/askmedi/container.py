@@ -32,6 +32,7 @@ def build_container(settings: Settings) -> Container:
     from askmedi.adapters.elevenlabs import ElevenLabsVoice
     from askmedi.adapters.gemini import GeminiClient
     from askmedi.adapters.litellm_provider import LiteLLMProvider
+    from askmedi.adapters.litellm_vision import LiteLLMVisionReader
     from askmedi.adapters.medlineplus import MedlinePlusSearch
     from askmedi.adapters.openfda import OpenFdaLabels
     from askmedi.adapters.osm import OsmDirectory
@@ -42,6 +43,7 @@ def build_container(settings: Settings) -> Container:
         PostgresProfileRepository,
         PostgresReportRepository,
     )
+    from askmedi.adapters.reader_chain import DocumentReaderChain
     from askmedi.adapters.search_chain import WebSearchChain
     from askmedi.adapters.supabase_jwt import SupabaseJwtVerifier, jwks_key_resolver
     from askmedi.safety.output_guard import OutputGuard
@@ -67,6 +69,10 @@ def build_container(settings: Settings) -> Container:
     # Gemini + Google Search grounding first; MedlinePlus search keeps answers sourced when the
     # Gemini grounding quota is exhausted.
     search = WebSearchChain([gemini, MedlinePlusSearch()])
+    # Gemini reads images and PDFs; non-Gemini vision models (Groq) take over for images when
+    # the Gemini free-tier quota is used up.
+    fallback_vision = [m for m in llm.models_for("vision") if not m.startswith("gemini")]
+    reader = DocumentReaderChain([gemini, LiteLLMVisionReader(fallback_vision)])
     guard = OutputGuard()
     profiles = PostgresProfileRepository(db)
     chat_repo = PostgresChatRepository(db)
@@ -101,7 +107,7 @@ def build_container(settings: Settings) -> Container:
             repeat_guard=RepeatQueryGuard(chat_repo),
         ),
         medicine=MedicineService(
-            reader=gemini,
+            reader=reader,
             labels=OpenFdaLabels(),
             search=search,
             llm=llm,
@@ -111,7 +117,7 @@ def build_container(settings: Settings) -> Container:
             audit=audit,
         ),
         reports=ReportService(
-            reader=gemini,
+            reader=reader,
             search=search,
             llm=llm,
             guard=guard,
