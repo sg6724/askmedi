@@ -22,7 +22,7 @@ class BotEntry extends ChatEntry {
   final ChatReply reply;
 }
 
-enum VoiceStatus { idle, recording, transcribing }
+enum VoiceStatus { idle, recording, transcribing, speaking }
 
 enum VoiceNotice { unavailable, micDenied, notHeard }
 
@@ -123,18 +123,37 @@ class ChatController extends Notifier<ChatState> {
           .read(voiceRepositoryProvider)
           .speak(text, language: ref.read(appLanguageProvider));
       if (!ref.mounted) return;
+      state = state.copyWith(voice: VoiceStatus.speaking);
       await _audio.playMp3(audio);
+      if (ref.mounted && state.voice == VoiceStatus.speaking) {
+        state = state.copyWith(voice: VoiceStatus.idle);
+      }
     } on ApiException catch (e) {
       if (ref.mounted && e.isBusy) {
         state = state.copyWith(voiceNotice: () => VoiceNotice.unavailable);
       }
     } catch (_) {
       // Playback problems must never break the text conversation.
+    } finally {
+      if (ref.mounted && state.voice == VoiceStatus.speaking) {
+        state = state.copyWith(voice: VoiceStatus.idle);
+      }
     }
   }
 
+  /// Stops reading a reply aloud (tap while speaking).
+  Future<void> stopSpeaking() async {
+    await _audio.stop();
+    if (ref.mounted && state.voice == VoiceStatus.speaking) {
+      state = state.copyWith(voice: VoiceStatus.idle);
+    }
+  }
+
+  /// Starts listening; interrupts a reply that is being read aloud.
   Future<void> startRecording() async {
-    if (state.voice != VoiceStatus.idle || state.busy) return;
+    final canStart =
+        state.voice == VoiceStatus.idle || state.voice == VoiceStatus.speaking;
+    if (!canStart || state.busy) return;
     await _audio.stop();
     final ok = await _recorder.start();
     if (!ref.mounted) return;

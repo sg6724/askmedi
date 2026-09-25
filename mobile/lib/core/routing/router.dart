@@ -6,6 +6,7 @@ import '../../features/auth/auth_repository.dart';
 import '../../features/auth/sign_in_screen.dart';
 import '../../features/consent/consent_screen.dart';
 import '../../features/chat/presentation/chat_screen.dart';
+import '../../features/chat/presentation/talk_screen.dart';
 import '../../features/emergency/presentation/emergency_screen.dart';
 import '../../features/history/presentation/history_screen.dart';
 import '../../features/home/home_screen.dart';
@@ -111,10 +112,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(path: Routes.chat, builder: (_, _) => const ChatScreen()),
-      GoRoute(
-        path: Routes.talk,
-        builder: (_, _) => const ChatScreen(voice: true),
-      ),
+      GoRoute(path: Routes.talk, builder: (_, _) => const TalkScreen()),
       GoRoute(
         path: Routes.emergency,
         builder: (_, state) => EmergencyScreen(

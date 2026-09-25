@@ -15,6 +15,7 @@ abstract interface class VoiceRecorder {
 
 /// Speaker output for spoken replies.
 abstract interface class AudioOutput {
+  /// Plays [bytes]; completes when playback ends or [stop] is called.
   Future<void> playMp3(Uint8List bytes);
   Future<void> stop();
 }
@@ -95,16 +96,31 @@ Uint8List wavFromPcm16(Uint8List pcm, {required int sampleRate}) {
 
 class SpeakerAudioOutput implements AudioOutput {
   AudioPlayer? _player;
+  Completer<void>? _done;
 
   @override
   Future<void> playMp3(Uint8List bytes) async {
     final player = _player ??= AudioPlayer();
-    await player.stop();
-    await player.play(BytesSource(bytes, mimeType: 'audio/mpeg'));
+    await stop();
+    final done = _done = Completer<void>();
+    final sub = player.onPlayerComplete.listen((_) {
+      if (!done.isCompleted) done.complete();
+    });
+    try {
+      await player.play(BytesSource(bytes, mimeType: 'audio/mpeg'));
+      // Bounded, so a missed completion event can never leave the UI "speaking".
+      await done.future.timeout(const Duration(minutes: 2), onTimeout: () {});
+    } finally {
+      await sub.cancel();
+    }
   }
 
   @override
-  Future<void> stop() async => _player?.stop();
+  Future<void> stop() async {
+    final done = _done;
+    if (done != null && !done.isCompleted) done.complete();
+    await _player?.stop();
+  }
 
   Future<void> dispose() async => _player?.dispose();
 }
