@@ -9,5 +9,8 @@ tasks:
   respond:   [groq/openai/gpt-oss-120b, gemini/gemini-3.5-flash]
   # vision: Gemini entries are used for strip/report reading (images and PDFs via Gemini REST).
   vision:    [gemini/gemini-3.5-flash, gemini/gemini-3.5-flash-lite, gemini/gemini-2.5-flash, groq/qwen/qwen3.8-27b]
+  # web_search: Groq gpt-oss with the built-in browser_search tool (Groq REST). Free tier, no
+  # Gemini quota; first in the search chain. Verified 2026-09-25 (found "ZADY 500" = azithromycin).
+  web_search: [groq/openai/gpt-oss-120b, groq/openai/gpt-oss-20b]
   # search: Gemini with Google Search grounding (Gemini REST only); MedlinePlus search is the fallback.
   search:    [gemini/gemini-2.5-flash, gemini/gemini-3.5-flash]

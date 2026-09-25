@@ -1,5 +1,6 @@
 """Medicine scan (vision) and lookup (openFDA label + web-grounded summary)."""
 
+import asyncio
 import logging
 from typing import Any
 
@@ -133,14 +134,10 @@ class MedicineService:
         self, user_id: str, name: str, brand: str | None, language: str
     ) -> dict[str, Any]:
         name = name.strip()
-        try:
-            label = await self._labels.find_label(name)
-        except DrugLabelUnavailable:
-            logger.warning("openFDA unavailable; continuing with web search only")
-            label = None
-
-        grounded = await research(
-            self._search, prompts.medicine_research_question(name, brand), [name]
+        # The label lookup and the web search are independent: run them together.
+        label, grounded = await asyncio.gather(
+            self._find_label(name),
+            research(self._search, prompts.medicine_research_question(name, brand), [name]),
         )
         data, violations, result = await guarded_json(
             self._llm,
@@ -154,6 +151,13 @@ class MedicineService:
                 language=language,
             ),
         )
+        # Indian brands (e.g. "Zady 500") are unknown to openFDA; the web search names the
+        # active ingredient, whose official label then drives the warnings and flags.
+        actives = [
+            a.title() for a in str_list((data or {}).get("active_ingredients"), 4) if len(a) <= 60
+        ]
+        if label is None and actives:
+            label = await self._find_label(actives[0])
         if data is None:
             info = {
                 "uses": [],
@@ -168,7 +172,7 @@ class MedicineService:
                 or SAFE_SUMMARY.get(language, SAFE_SUMMARY["en"]),
             }
 
-        salts = self._salts(name, label)
+        salts = self._salts(name, label, actives)
         profile = await self._profile(user_id)
         flags = pharmacist_flags(
             profile, label=label, salts=[s["name"] for s in salts] + [name], language=language
@@ -213,9 +217,18 @@ class MedicineService:
             "disclaimer": disclaimer(language),
         }
 
+    async def _find_label(self, name: str) -> DrugLabel | None:
+        try:
+            return await self._labels.find_label(name)
+        except DrugLabelUnavailable:
+            logger.warning("openFDA unavailable; continuing with web search only")
+            return None
+
     @staticmethod
-    def _salts(name: str, label: DrugLabel | None) -> list[dict[str, Any]]:
+    def _salts(name: str, label: DrugLabel | None, actives: list[str]) -> list[dict[str, Any]]:
         names = (label.substances or label.generic_names) if label else []
+        if not names and actives:
+            return [{"name": a, "strength": None} for a in actives]
         if not names:
             return [{"name": name, "strength": None}]
         return [{"name": n.title(), "strength": None} for n in names[:6]]

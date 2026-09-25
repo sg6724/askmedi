@@ -24,6 +24,8 @@ class Settings(BaseSettings):
 
     # Gemini REST (grounded web search + vision). LiteLLM reads GEMINI_API_KEY from the env too.
     gemini_api_key: str | None = None
+    # Also read by LiteLLM from the environment; here for Groq's built-in web search.
+    groq_api_key: str | None = None
 
     # ElevenLabs voice. When the key is unset, /voice/* answer 503 voice_unavailable.
     elevenlabs_api_key: str | None = None

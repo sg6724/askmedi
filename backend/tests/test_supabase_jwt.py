@@ -19,8 +19,15 @@ def keypair():
 
 def make_token(private_key, **overrides) -> str:
     now = int(time.time())
-    claims = {"sub": "user-123", "email": "a@test.dev", "aud": AUD, "iss": ISSUER,
-              "iat": now, "exp": now + 3600, "role": "authenticated"}
+    claims = {
+        "sub": "user-123",
+        "email": "a@test.dev",
+        "aud": AUD,
+        "iss": ISSUER,
+        "iat": now,
+        "exp": now + 3600,
+        "role": "authenticated",
+    }
     claims.update(overrides)
     claims = {k: v for k, v in claims.items() if v is not None}
     return jwt.encode(claims, private_key, algorithm="RS256")
@@ -74,8 +81,14 @@ def test_es256_token_verifies():
     private = ec.generate_private_key(ec.SECP256R1())
     now = int(time.time())
     token = jwt.encode(
-        {"sub": "user-es", "email": "es@test.dev", "aud": AUD, "iss": ISSUER,
-         "iat": now, "exp": now + 3600},
+        {
+            "sub": "user-es",
+            "email": "es@test.dev",
+            "aud": AUD,
+            "iss": ISSUER,
+            "iat": now,
+            "exp": now + 3600,
+        },
         private,
         algorithm="ES256",
     )

@@ -29,13 +29,9 @@ def test_unknown_origin_is_not_allowed(client):
 
 
 def test_configured_origin_regex_is_used(fake_container: Container):
-    client = TestClient(
-        create_app(fake_container, cors_origin_regex=r"^https://askmedi\.example$")
-    )
+    client = TestClient(create_app(fake_container, cors_origin_regex=r"^https://askmedi\.example$"))
     assert _preflight(client, "https://askmedi.example").status_code == 200
-    assert "access-control-allow-origin" not in _preflight(
-        client, "http://localhost:7357"
-    ).headers
+    assert "access-control-allow-origin" not in _preflight(client, "http://localhost:7357").headers
 
 
 def test_default_regex_only_matches_local_hosts():

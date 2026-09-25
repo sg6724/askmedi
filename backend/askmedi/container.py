@@ -31,6 +31,7 @@ def build_container(settings: Settings) -> Container:
     from askmedi.adapters.database import Database
     from askmedi.adapters.elevenlabs import ElevenLabsVoice
     from askmedi.adapters.gemini import GeminiClient
+    from askmedi.adapters.groq_search import GroqWebSearch
     from askmedi.adapters.litellm_provider import LiteLLMProvider
     from askmedi.adapters.litellm_vision import LiteLLMVisionReader
     from askmedi.adapters.medlineplus import MedlinePlusSearch
@@ -66,9 +67,14 @@ def build_container(settings: Settings) -> Container:
         search_models=llm.models_for("search"),
         vision_models=llm.models_for("vision"),
     )
-    # Gemini + Google Search grounding first; MedlinePlus search keeps answers sourced when the
-    # Gemini grounding quota is exhausted.
-    search = WebSearchChain([gemini, MedlinePlusSearch()])
+    # Groq browser search first (free tier, no Gemini quota), then Gemini + Google Search
+    # grounding, then MedlinePlus search so answers stay sourced when both are unavailable.
+    searches = [gemini, MedlinePlusSearch()]
+    if settings.groq_api_key:
+        searches.insert(
+            0, GroqWebSearch(settings.groq_api_key, models=llm.models_for("web_search"))
+        )
+    search = WebSearchChain(searches)
     # Gemini reads images and PDFs; non-Gemini vision models (Groq) take over for images when
     # the Gemini free-tier quota is used up.
     fallback_vision = [m for m in llm.models_for("vision") if not m.startswith("gemini")]

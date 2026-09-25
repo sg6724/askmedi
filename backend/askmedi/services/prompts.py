@@ -166,8 +166,9 @@ List the most likely reading first (at most 3 candidates). If no medicine text i
 def medicine_research_question(name: str, brand: str | None) -> str:
     label = f"{name} ({brand})" if brand else name
     return f"""{PREFERRED_SOURCES} For medicines, dailymed.nlm.nih.gov and cdsco.gov.in are also good.
-Describe the medicine {label} as used in India: what it is used for, the main
-safety warnings, who should be careful, and common side effects. Do not give doses."""
+First name the active ingredient(s) (generic names) of the medicine {label} as sold in India —
+it may be an Indian brand name. Then describe what it is used for, the main safety warnings,
+who should be careful, and common side effects. Do not give doses."""
 
 
 def medicine_summary_messages(
@@ -176,7 +177,8 @@ def medicine_summary_messages(
     system = f"""You explain medicines in plain language for people in India. Write in
 {language_name(language)}. Use only the label excerpts and research notes given.
 Return ONLY a JSON object:
-{{"uses": ["2-5 short items"], "warnings": ["2-6 short items"], "summary": "2-3 sentences"}}
+{{"active_ingredients": ["generic names in English, e.g. Azithromycin; [] if unknown"],
+ "uses": ["2-5 short items"], "warnings": ["2-6 short items"], "summary": "2-3 sentences"}}
 Never include doses, strengths or schedules. Say to follow the doctor's or pharmacist's directions.
 
 {SAFETY_RULES}"""

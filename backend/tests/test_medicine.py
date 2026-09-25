@@ -129,3 +129,50 @@ async def test_lookup_strips_unsafe_summary():
     out = await service.lookup("u", "Paracetamol", None, "en")
     assert "500" not in out["summary"]
     assert out["uses"] == []
+
+
+class LabelsByName:
+    """openFDA fake that only knows generic names (like the real one)."""
+
+    def __init__(self, labels):
+        self.labels = labels
+        self.asked: list[str] = []
+
+    async def find_label(self, name):
+        self.asked.append(name)
+        return self.labels.get(name.strip().lower())
+
+
+async def test_indian_brand_resolves_to_its_active_ingredient_label():
+    azithro = a_label(
+        generic_names=["AZITHROMYCIN"],
+        substances=["AZITHROMYCIN"],
+        warnings="Ask a doctor before use if you have liver disease.",
+    )
+    labels = LabelsByName({"azithromycin": azithro})
+    summary = {**SUMMARY, "active_ingredients": ["Azithromycin"]}
+    service = MedicineService(
+        reader=FakeReader(),
+        labels=labels,
+        search=FakeSearch(text="ZADY 500 contains azithromycin, an antibiotic."),
+        llm=ScriptedLLM({"respond": [summary]}),
+        guard=OutputGuard(),
+        repo=FakeMedicineRepo(),
+        profiles=FakeProfiles(Profile(conditions=["liver disease"])),
+        audit=FakeAudit(),
+    )
+
+    out = await service.lookup("u", "ZADY - 500", "ZADY - 500", "en")
+
+    # The brand is unknown to openFDA; the web-found ingredient is looked up next.
+    assert labels.asked == ["ZADY - 500", "Azithromycin"]
+    assert out["salts"] == [{"name": "Azithromycin", "strength": None}]
+    assert out["pharmacist_flags"][0]["reason"].endswith("liver disease.")
+    assert out["sources"][0]["url"].startswith("https://dailymed.nlm.nih.gov/")
+
+
+async def test_without_label_the_web_found_ingredients_are_the_salts():
+    summary = {**SUMMARY, "active_ingredients": ["Azithromycin"]}
+    service = make(llm=ScriptedLLM({"respond": [summary]}))  # FakeLabels(None): no labels
+    out = await service.lookup("u", "ZADY - 500", None, "en")
+    assert out["salts"] == [{"name": "Azithromycin", "strength": None}]
