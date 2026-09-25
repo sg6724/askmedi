@@ -29,7 +29,8 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
   String? _mapsUrl;
   String? _locationError;
 
-  void _call(String number) => ref.read(urlOpenerProvider)(Uri(scheme: 'tel', path: number));
+  void _call(String number) =>
+      ref.read(urlOpenerProvider)(Uri(scheme: 'tel', path: number));
 
   Future<void> _locate() async {
     final l10n = AppLocalizations.of(context);
@@ -40,15 +41,19 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     try {
       final p = await ref.read(locationServiceProvider).current();
       if (!mounted) return;
-      setState(() => _mapsUrl =
-          'https://www.google.com/maps/search/?api=1&query=${p.lat.toStringAsFixed(6)},${p.lng.toStringAsFixed(6)}');
+      setState(
+        () => _mapsUrl =
+            'https://www.google.com/maps/search/?api=1&query=${p.lat.toStringAsFixed(6)},${p.lng.toStringAsFixed(6)}',
+      );
     } on LocationException catch (e) {
       if (!mounted) return;
-      setState(() => _locationError = switch (e.failure) {
-            LocationFailure.denied => l10n.locationDenied,
-            LocationFailure.serviceOff => l10n.locationServiceOff,
-            LocationFailure.unavailable => l10n.locationUnavailable,
-          });
+      setState(
+        () => _locationError = switch (e.failure) {
+          LocationFailure.denied => l10n.locationDenied,
+          LocationFailure.serviceOff => l10n.locationServiceOff,
+          LocationFailure.unavailable => l10n.locationUnavailable,
+        },
+      );
     } finally {
       if (mounted) setState(() => _locating = false);
     }
@@ -78,13 +83,22 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 64),
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.white,
+              size: 64,
+            ),
             const SizedBox(height: 12),
             Text(
-              (reason == null || reason.isEmpty) ? l10n.emergencyGeneric : reason,
+              (reason == null || reason.isEmpty)
+                  ? l10n.emergencyGeneric
+                  : reason,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             if (source != null && source.title.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -96,14 +110,20 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                   l10n.emergencySource(source.title),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                      color: Colors.white, decoration: TextDecoration.underline),
+                    color: Colors.white,
+                    decoration: TextDecoration.underline,
+                  ),
                 ),
               ),
             ],
             const SizedBox(height: 24),
             _CallButton(label: l10n.call112, onTap: () => _call('112')),
             _CallButton(label: l10n.call108, onTap: () => _call('108')),
-            _CallButton(label: l10n.call102, onTap: () => _call('102'), small: true),
+            _CallButton(
+              label: l10n.call102,
+              onTap: () => _call('102'),
+              small: true,
+            ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
@@ -116,45 +136,59 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Icon(Icons.my_location),
               label: Text(l10n.shareLocation),
             ),
             if (_locationError != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text(_locationError!,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white)),
+                child: Text(
+                  _locationError!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
             if (_mapsUrl != null) ...[
               const SizedBox(height: 8),
-              Row(children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                        backgroundColor: Colors.white, foregroundColor: AppColors.danger),
-                    onPressed: () => _share(whatsapp: true),
-                    icon: const Icon(Icons.chat),
-                    label: Text(l10n.shareViaWhatsApp),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppColors.danger,
+                      ),
+                      onPressed: () => _share(whatsapp: true),
+                      icon: const Icon(Icons.chat),
+                      label: Text(l10n.shareViaWhatsApp),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                        backgroundColor: Colors.white, foregroundColor: AppColors.danger),
-                    onPressed: () => _share(whatsapp: false),
-                    icon: const Icon(Icons.sms),
-                    label: Text(l10n.shareViaSms),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppColors.danger,
+                      ),
+                      onPressed: () => _share(whatsapp: false),
+                      icon: const Icon(Icons.sms),
+                      label: Text(l10n.shareViaSms),
+                    ),
                   ),
-                ),
-              ]),
+                ],
+              ),
             ],
             const SizedBox(height: 24),
-            Text(l10n.emergencyNote,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            Text(
+              l10n.emergencyNote,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
           ],
         ),
       ),
@@ -163,24 +197,31 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
 }
 
 class _CallButton extends StatelessWidget {
-  const _CallButton({required this.label, required this.onTap, this.small = false});
+  const _CallButton({
+    required this.label,
+    required this.onTap,
+    this.small = false,
+  });
   final String label;
   final VoidCallback onTap;
   final bool small;
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: FilledButton.icon(
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: AppColors.danger,
-            minimumSize: Size.fromHeight(small ? 52 : 68),
-            textStyle: TextStyle(fontSize: small ? 16 : 20, fontWeight: FontWeight.w700),
-          ),
-          onPressed: onTap,
-          icon: const Icon(Icons.call),
-          label: Text(label),
+    padding: const EdgeInsets.only(bottom: 12),
+    child: FilledButton.icon(
+      style: FilledButton.styleFrom(
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.danger,
+        minimumSize: Size.fromHeight(small ? 52 : 68),
+        textStyle: TextStyle(
+          fontSize: small ? 16 : 20,
+          fontWeight: FontWeight.w700,
         ),
-      );
+      ),
+      onPressed: onTap,
+      icon: const Icon(Icons.call),
+      label: Text(label),
+    ),
+  );
 }

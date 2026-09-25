@@ -40,10 +40,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         content: Text(l10n.deleteAccountConfirmBody),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: AppColors.danger, minimumSize: const Size(0, 44)),
+              backgroundColor: AppColors.danger,
+              minimumSize: const Size(0, 44),
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: Text(l10n.deleteConfirm),
           ),
@@ -79,47 +83,62 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final locale = ref.watch(localeControllerProvider);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.tabProfile)),
-      body: ListView(children: [
-        ListTile(
-          leading: const Icon(Icons.edit_note),
-          title: Text(l10n.editHealthProfile),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.push(Routes.editProfile),
-        ),
-        const Divider(),
-        ListTile(
-          leading: const Icon(Icons.translate),
-          title: Text(l10n.languageLabel),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Wrap(spacing: 8, children: [
-            for (final (l, name) in _languages)
-              ChoiceChip(
-                label: Text(name),
-                selected: locale?.languageCode == l.languageCode,
-                onSelected: (_) =>
-                    ref.read(localeControllerProvider.notifier).setLocale(l),
-              ),
-          ]),
-        ),
-        const Divider(height: 32),
-        ListTile(
-          leading: const Icon(Icons.logout),
-          title: Text(l10n.signOut),
-          onTap: () => ref.read(authRepositoryProvider).signOut(),
-        ),
-        ListTile(
-          leading: _deleting
-              ? const SizedBox(
-                  width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.delete_forever, color: AppColors.danger),
-          title: Text(l10n.deleteAccount, style: const TextStyle(color: AppColors.danger)),
-          onTap: _deleting ? null : _deleteAccount,
-        ),
-        if (_error != null)
-          Padding(padding: const EdgeInsets.all(16), child: ErrorBanner(_error!)),
-      ]),
+      body: ListView(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit_note),
+            title: Text(l10n.editHealthProfile),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(Routes.editProfile),
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.translate),
+            title: Text(l10n.languageLabel),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Wrap(
+              spacing: 8,
+              children: [
+                for (final (l, name) in _languages)
+                  ChoiceChip(
+                    label: Text(name),
+                    selected: locale?.languageCode == l.languageCode,
+                    onSelected: (_) => ref
+                        .read(localeControllerProvider.notifier)
+                        .setLocale(l),
+                  ),
+              ],
+            ),
+          ),
+          const Divider(height: 32),
+          ListTile(
+            leading: const Icon(Icons.logout),
+            title: Text(l10n.signOut),
+            onTap: () => ref.read(authRepositoryProvider).signOut(),
+          ),
+          ListTile(
+            leading: _deleting
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.delete_forever, color: AppColors.danger),
+            title: Text(
+              l10n.deleteAccount,
+              style: const TextStyle(color: AppColors.danger),
+            ),
+            onTap: _deleting ? null : _deleteAccount,
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ErrorBanner(_error!),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -137,7 +156,9 @@ class EditProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    return ref.watch(storedProfileProvider).when(
+    return ref
+        .watch(storedProfileProvider)
+        .when(
           data: (p) => ProfileSetupScreen(
             initial: p ?? const HealthProfile(birthYear: 0),
             onSaved: () {
@@ -150,8 +171,10 @@ class EditProfileScreen extends ConsumerWidget {
             appBar: AppBar(title: Text(l10n.editHealthProfile)),
             body: Padding(
               padding: const EdgeInsets.all(16),
-              child: ErrorBanner(l10n.genericError,
-                  onRetry: () => ref.invalidate(storedProfileProvider)),
+              child: ErrorBanner(
+                l10n.genericError,
+                onRetry: () => ref.invalidate(storedProfileProvider),
+              ),
             ),
           ),
           loading: () => Scaffold(

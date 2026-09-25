@@ -29,21 +29,27 @@ class HistoryScreen extends ConsumerWidget {
               onPressed: () => ref.invalidate(historyProvider),
             ),
           ],
-          bottom: TabBar(tabs: [
-            Tab(text: l10n.timelineTab),
-            Tab(text: l10n.analyticsTab),
-          ]),
+          bottom: TabBar(
+            tabs: [
+              Tab(text: l10n.timelineTab),
+              Tab(text: l10n.analyticsTab),
+            ],
+          ),
         ),
         body: data.when(
-          data: (d) => TabBarView(children: [
-            _Timeline(data: d),
-            _Analytics(data: d),
-          ]),
+          data: (d) => TabBarView(
+            children: [
+              _Timeline(data: d),
+              _Analytics(data: d),
+            ],
+          ),
           error: (e, _) => Center(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: ErrorBanner(apiErrorMessage(l10n, e),
-                  onRetry: () => ref.invalidate(historyProvider)),
+              child: ErrorBanner(
+                apiErrorMessage(l10n, e),
+                onRetry: () => ref.invalidate(historyProvider),
+              ),
             ),
           ),
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -77,58 +83,64 @@ class _TimelineState extends State<_Timeline> {
       HistoryFilter.medicines: l10n.filterMedicines,
       HistoryFilter.reports: l10n.filterReports,
     };
-    return Column(children: [
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-        child: Row(children: [
-          for (final f in HistoryFilter.values)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text(labels[f]!),
-                selected: _filter == f,
-                onSelected: (_) => setState(() => _filter = f),
-              ),
-            ),
-        ]),
-      ),
-      Expanded(
-        child: items.isEmpty
-            ? EmptyState(l10n.historyEmpty, icon: Icons.history)
-            : ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: items.length,
-                itemBuilder: (context, i) => _tile(context, l10n, items[i]),
-              ),
-      ),
-    ]);
+    return Column(
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: Row(
+            children: [
+              for (final f in HistoryFilter.values)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(labels[f]!),
+                    selected: _filter == f,
+                    onSelected: (_) => setState(() => _filter = f),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: items.isEmpty
+              ? EmptyState(l10n.historyEmpty, icon: Icons.history)
+              : ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: items.length,
+                  itemBuilder: (context, i) => _tile(context, l10n, items[i]),
+                ),
+        ),
+      ],
+    );
   }
 
   Widget _tile(BuildContext context, AppLocalizations l10n, TimelineItem item) {
     final (icon, color, title, subtitle) = switch (item) {
       SymptomItem(:final episode) => (
-          Icons.healing,
-          urgencyColor(Urgency.fromWire(episode.urgency)),
-          episode.symptoms.isEmpty ? l10n.symptomCheck : episode.symptoms.join(', '),
-          episode.urgency == null
-              ? l10n.symptomCheck
-              : '${l10n.symptomCheck} · ${urgencyLabel(l10n, Urgency.fromWire(episode.urgency))}',
-        ),
+        Icons.healing,
+        urgencyColor(Urgency.fromWire(episode.urgency)),
+        episode.symptoms.isEmpty
+            ? l10n.symptomCheck
+            : episode.symptoms.join(', '),
+        episode.urgency == null
+            ? l10n.symptomCheck
+            : '${l10n.symptomCheck} · ${urgencyLabel(l10n, Urgency.fromWire(episode.urgency))}',
+      ),
       MedicineItem(:final lookup) => (
-          Icons.medication,
-          AppColors.teal,
-          lookup.brand?.isNotEmpty == true ? lookup.brand! : lookup.query,
-          l10n.medicineLookup,
-        ),
+        Icons.medication,
+        AppColors.teal,
+        lookup.brand?.isNotEmpty == true ? lookup.brand! : lookup.query,
+        l10n.medicineLookup,
+      ),
       ReportTimelineItem(:final report) => (
-          Icons.description,
-          AppColors.navy,
-          report.lab?.isNotEmpty == true ? report.lab! : l10n.labReport,
-          report.confirmed
-              ? l10n.labReport
-              : '${l10n.labReport} · ${l10n.reportDraft}',
-        ),
+        Icons.description,
+        AppColors.navy,
+        report.lab?.isNotEmpty == true ? report.lab! : l10n.labReport,
+        report.confirmed
+            ? l10n.labReport
+            : '${l10n.labReport} · ${l10n.reportDraft}',
+      ),
     };
     return Card(
       color: Colors.white,
@@ -139,8 +151,10 @@ class _TimelineState extends State<_Timeline> {
         ),
         title: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
         subtitle: Text(subtitle),
-        trailing: Text(_date(context, item.date),
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+        trailing: Text(
+          _date(context, item.date),
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
       ),
     );
   }
@@ -169,57 +183,82 @@ class _AnalyticsState extends State<_Analytics> {
     final avg = averageFollowups(d.episodes);
     final repeats = repeatCount(d.episodes);
     final tests = d.values.keys.toList()..sort();
-    final test = (_test != null && tests.contains(_test)) ? _test! : tests.firstOrNull;
+    final test = (_test != null && tests.contains(_test))
+        ? _test!
+        : tests.firstOrNull;
 
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      if (repeats > 0)
-        Card(
-          color: AppColors.peach,
-          child: ListTile(
-            leading: const Icon(Icons.repeat, color: Color(0xFFE67E22)),
-            title: Text(l10n.repeatBanner),
-          ),
-        ),
-      if (d.episodes.isNotEmpty) ...[
-        SectionTitle(l10n.episodesPerWeek),
-        LabelledBarChart(bars: [
-          for (final w in weekly) (label: shortDate(w.weekStart), value: w.count.toDouble()),
-        ]),
-        if (top.isNotEmpty) ...[
-          SectionTitle(l10n.topSymptoms),
-          LabelledBarChart(bars: [
-            for (final s in top) (label: s.name, value: s.count.toDouble()),
-          ]),
-        ],
-        if (avg != null)
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (repeats > 0)
           Card(
-            color: Colors.white,
-            margin: const EdgeInsets.only(top: 16),
+            color: AppColors.peach,
             child: ListTile(
-              title: Text(l10n.avgFollowups),
-              trailing: Text(avg.toStringAsFixed(1),
-                  style: const TextStyle(
-                      fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.navy)),
+              leading: const Icon(Icons.repeat, color: Color(0xFFE67E22)),
+              title: Text(l10n.repeatBanner),
             ),
           ),
+        if (d.episodes.isNotEmpty) ...[
+          SectionTitle(l10n.episodesPerWeek),
+          LabelledBarChart(
+            bars: [
+              for (final w in weekly)
+                (label: shortDate(w.weekStart), value: w.count.toDouble()),
+            ],
+          ),
+          if (top.isNotEmpty) ...[
+            SectionTitle(l10n.topSymptoms),
+            LabelledBarChart(
+              bars: [
+                for (final s in top) (label: s.name, value: s.count.toDouble()),
+              ],
+            ),
+          ],
+          if (avg != null)
+            Card(
+              color: Colors.white,
+              margin: const EdgeInsets.only(top: 16),
+              child: ListTile(
+                title: Text(l10n.avgFollowups),
+                trailing: Text(
+                  avg.toStringAsFixed(1),
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.navy,
+                  ),
+                ),
+              ),
+            ),
+        ],
+        SectionTitle(l10n.reportTrends),
+        if (test == null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              l10n.noReportValues,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+          )
+        else ...[
+          DropdownButtonFormField<String>(
+            initialValue: test,
+            decoration: InputDecoration(
+              labelText: l10n.testName,
+              isDense: true,
+            ),
+            items: [
+              for (final t in tests) DropdownMenuItem(value: t, child: Text(t)),
+            ],
+            onChanged: (t) => setState(() => _test = t),
+          ),
+          TrendLineChart(
+            points: [
+              for (final p in d.values[test]!) (date: p.date, value: p.value),
+            ],
+          ),
+        ],
       ],
-      SectionTitle(l10n.reportTrends),
-      if (test == null)
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(l10n.noReportValues,
-              style: const TextStyle(color: AppColors.textSecondary)),
-        )
-      else ...[
-        DropdownButtonFormField<String>(
-          initialValue: test,
-          decoration: InputDecoration(labelText: l10n.testName, isDense: true),
-          items: [for (final t in tests) DropdownMenuItem(value: t, child: Text(t))],
-          onChanged: (t) => setState(() => _test = t),
-        ),
-        TrendLineChart(
-            points: [for (final p in d.values[test]!) (date: p.date, value: p.value)]),
-      ],
-    ]);
+    );
   }
 }

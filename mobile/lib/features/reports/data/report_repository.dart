@@ -26,19 +26,21 @@ class ApiReportRepository implements ReportRepository {
   final SupabaseClient _db;
 
   @override
-  Future<ParsedReport> parse(UploadFile file) async =>
-      ParsedReport.fromJson(await _api.postFile('/reports/parse', 'file', file));
+  Future<ParsedReport> parse(UploadFile file) async => ParsedReport.fromJson(
+    await _api.postFile('/reports/parse', 'file', file),
+  );
 
   @override
   Future<ReportSummary> confirm(
     String reportId,
     List<ReportValue> values, {
     required String language,
-  }) async =>
-      ReportSummary.fromJson(await _api.postJson('/reports/$reportId/confirm', {
-        'values': [for (final v in values) v.toJson()],
-        'language': language,
-      }));
+  }) async => ReportSummary.fromJson(
+    await _api.postJson('/reports/$reportId/confirm', {
+      'values': [for (final v in values) v.toJson()],
+      'language': language,
+    }),
+  );
 
   @override
   Future<List<TestPoint>> history(String testName) async {
@@ -66,11 +68,16 @@ List<TestPoint> pointsFromRows(List<Map<String, dynamic>> rows) {
   return points;
 }
 
-final reportRepositoryProvider = Provider<ReportRepository>((ref) => ApiReportRepository(
-    ref.watch(apiClientProvider), ref.watch(supabaseClientProvider)));
+final reportRepositoryProvider = Provider<ReportRepository>(
+  (ref) => ApiReportRepository(
+    ref.watch(apiClientProvider),
+    ref.watch(supabaseClientProvider),
+  ),
+);
 
 /// autoDispose: per-user data, dropped when the screen closes.
-final testHistoryProvider = FutureProvider.autoDispose.family<List<TestPoint>, String>(
-  (ref, testName) => ref.watch(reportRepositoryProvider).history(testName),
-  retry: (_, _) => null,
-);
+final testHistoryProvider = FutureProvider.autoDispose
+    .family<List<TestPoint>, String>(
+      (ref, testName) => ref.watch(reportRepositoryProvider).history(testName),
+      retry: (_, _) => null,
+    );

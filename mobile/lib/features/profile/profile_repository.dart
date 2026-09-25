@@ -11,7 +11,10 @@ abstract interface class ProfileRepository {
   /// would leave the lists wiped or partly rewritten, which is harmless for a
   /// first-time flow but not for editing stored data. Editing uses
   /// [updateProfile] instead.
-  Future<void> saveOnboardingProfile(HealthProfile profile, {required String language});
+  Future<void> saveOnboardingProfile(
+    HealthProfile profile, {
+    required String language,
+  });
 
   /// The stored profile, or null if there is none yet.
   Future<HealthProfile?> loadProfile();
@@ -29,10 +32,10 @@ const _lists = [
 ];
 
 List<String> _itemsFor(HealthProfile p, String table) => switch (table) {
-      'health_conditions' => p.conditions,
-      'user_medicines' => p.medicines,
-      _ => p.allergies,
-    };
+  'health_conditions' => p.conditions,
+  'user_medicines' => p.medicines,
+  _ => p.allergies,
+};
 
 class SupabaseProfileRepository implements ProfileRepository {
   SupabaseProfileRepository(this._client);
@@ -51,19 +54,19 @@ class SupabaseProfileRepository implements ProfileRepository {
       await _client.from(table).delete().eq('user_id', userId);
     }
     if (p.conditions.isNotEmpty) {
-      await _client
-          .from('health_conditions')
-          .insert([for (final c in p.conditions) {'name': c}]);
+      await _client.from('health_conditions').insert([
+        for (final c in p.conditions) {'name': c},
+      ]);
     }
     if (p.medicines.isNotEmpty) {
-      await _client
-          .from('user_medicines')
-          .insert([for (final m in p.medicines) {'salt': m}]);
+      await _client.from('user_medicines').insert([
+        for (final m in p.medicines) {'salt': m},
+      ]);
     }
     if (p.allergies.isNotEmpty) {
-      await _client
-          .from('allergies')
-          .insert([for (final a in p.allergies) {'substance': a}]);
+      await _client.from('allergies').insert([
+        for (final a in p.allergies) {'substance': a},
+      ]);
     }
 
     await _client.from('profiles').upsert({
@@ -101,26 +104,34 @@ class SupabaseProfileRepository implements ProfileRepository {
   }
 
   @override
-  Future<void> updateProfile(HealthProfile p, {required String language}) async {
+  Future<void> updateProfile(
+    HealthProfile p, {
+    required String language,
+  }) async {
     final userId = _client.auth.currentUser!.id;
     for (final (table, column) in _lists) {
       final old = await _client.from(table).select('id');
       final items = _itemsFor(p, table);
       if (items.isNotEmpty) {
-        await _client.from(table).insert([for (final i in items) {column: i}]);
+        await _client.from(table).insert([
+          for (final i in items) {column: i},
+        ]);
       }
       final oldIds = [for (final r in old) r['id'] as String];
       if (oldIds.isNotEmpty) {
         await _client.from(table).delete().inFilter('id', oldIds);
       }
     }
-    await _client.from('profiles').update({
-      'display_name': p.displayName,
-      'language': language,
-      'birth_year': p.birthYear,
-      'sex': p.sex?.wire,
-      'pregnant': p.sex == Sex.female ? p.pregnant : null,
-    }).eq('user_id', userId);
+    await _client
+        .from('profiles')
+        .update({
+          'display_name': p.displayName,
+          'language': language,
+          'birth_year': p.birthYear,
+          'sex': p.sex?.wire,
+          'pregnant': p.sex == Sex.female ? p.pregnant : null,
+        })
+        .eq('user_id', userId);
   }
 }
 

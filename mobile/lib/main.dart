@@ -16,8 +16,10 @@ Future<void> main() async {
     publishableKey: AppConfig.supabaseAnonKey,
   );
   final prefs = await SharedPreferences.getInstance();
-  runApp(ProviderScope(
-    overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-    child: const AskMediApp(),
-  ));
+  runApp(
+    ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      child: const AskMediApp(),
+    ),
+  );
 }

@@ -85,7 +85,10 @@ class _HospitalsScreenState extends ConsumerState<HospitalsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(l10n.hospitalsIntro, style: const TextStyle(color: AppColors.textSecondary)),
+          Text(
+            l10n.hospitalsIntro,
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 12),
           FilledButton.icon(
             onPressed: _busy ? null : _useMyLocation,
@@ -93,25 +96,27 @@ class _HospitalsScreenState extends ConsumerState<HospitalsScreen> {
             label: Text(l10n.useMyLocation),
           ),
           const SizedBox(height: 12),
-          Row(children: [
-            Expanded(
-              child: TextField(
-                controller: _place,
-                textInputAction: TextInputAction.search,
-                onSubmitted: (_) => _searchText(),
-                decoration: InputDecoration(
-                  labelText: l10n.pincodeOrArea,
-                  prefixIcon: const Icon(Icons.search),
-                  isDense: true,
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _place,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => _searchText(),
+                  decoration: InputDecoration(
+                    labelText: l10n.pincodeOrArea,
+                    prefixIcon: const Icon(Icons.search),
+                    isDense: true,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            OutlinedButton(
-              onPressed: _busy ? null : _searchText,
-              child: Text(l10n.search),
-            ),
-          ]),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed: _busy ? null : _searchText,
+                child: Text(l10n.search),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           if (_busy) const LinearProgressIndicator(),
           if (_error != null) ErrorBanner(_error!),
@@ -119,8 +124,10 @@ class _HospitalsScreenState extends ConsumerState<HospitalsScreen> {
             if (result.label.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(l10n.hospitalsNear(result.label),
-                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                child: Text(
+                  l10n.hospitalsNear(result.label),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
               ),
             if (result.hospitals.isEmpty)
               EmptyState(l10n.noHospitals, icon: Icons.local_hospital_outlined),
@@ -145,54 +152,88 @@ class HospitalCard extends ConsumerWidget {
       color: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Expanded(
-              child: Text(h.name,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    h.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                if (h.distanceKm != null)
+                  Text(
+                    l10n.distanceKm(h.distanceKm!.toStringAsFixed(1)),
+                    style: const TextStyle(
+                      color: AppColors.teal,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
             ),
-            if (h.distanceKm != null)
-              Text(l10n.distanceKm(h.distanceKm!.toStringAsFixed(1)),
-                  style: const TextStyle(color: AppColors.teal, fontWeight: FontWeight.w600)),
-          ]),
-          if (h.address != null && h.address!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(h.address!, style: const TextStyle(color: AppColors.textSecondary)),
-            ),
-          if (h.emergency == true)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Row(children: [
-                const Icon(Icons.emergency, size: 16, color: AppColors.danger),
-                const SizedBox(width: 4),
-                Text(l10n.emergencyCare,
-                    style: const TextStyle(color: AppColors.danger, fontSize: 12)),
-              ]),
-            ),
-          const SizedBox(height: 8),
-          Row(children: [
-            if (h.phone != null && h.phone!.isNotEmpty) ...[
-              OutlinedButton.icon(
-                // OSM may list several numbers; dial the first, digits only.
-                onPressed: () => open(Uri(
-                    scheme: 'tel',
-                    path: h.phone!
-                        .split(RegExp(r'[;,/]'))
-                        .first
-                        .replaceAll(RegExp(r'[^0-9+]'), ''))),
-                icon: const Icon(Icons.call, size: 18),
-                label: Text(l10n.callButton),
+            if (h.address != null && h.address!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  h.address!,
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
               ),
-              const SizedBox(width: 8),
-            ],
-            OutlinedButton.icon(
-              onPressed: () => open(Uri.parse(h.directionsUrl)),
-              icon: const Icon(Icons.directions, size: 18),
-              label: Text(l10n.directions),
+            if (h.emergency == true)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.emergency,
+                      size: 16,
+                      color: AppColors.danger,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.emergencyCare,
+                      style: const TextStyle(
+                        color: AppColors.danger,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                if (h.phone != null && h.phone!.isNotEmpty) ...[
+                  OutlinedButton.icon(
+                    // OSM may list several numbers; dial the first, digits only.
+                    onPressed: () => open(
+                      Uri(
+                        scheme: 'tel',
+                        path: h.phone!
+                            .split(RegExp(r'[;,/]'))
+                            .first
+                            .replaceAll(RegExp(r'[^0-9+]'), ''),
+                      ),
+                    ),
+                    icon: const Icon(Icons.call, size: 18),
+                    label: Text(l10n.callButton),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                OutlinedButton.icon(
+                  onPressed: () => open(Uri.parse(h.directionsUrl)),
+                  icon: const Icon(Icons.directions, size: 18),
+                  label: Text(l10n.directions),
+                ),
+              ],
             ),
-          ]),
-        ]),
+          ],
+        ),
       ),
     );
   }

@@ -15,8 +15,10 @@ class ApiHospitalsRepository implements HospitalsRepository {
   @override
   Future<HospitalSearchResult> search(HospitalQuery query) async =>
       HospitalSearchResult.fromJson(
-          await _api.getJson('/hospitals', query: query.toParams()));
+        await _api.getJson('/hospitals', query: query.toParams()),
+      );
 }
 
 final hospitalsRepositoryProvider = Provider<HospitalsRepository>(
-    (ref) => ApiHospitalsRepository(ref.watch(apiClientProvider)));
+  (ref) => ApiHospitalsRepository(ref.watch(apiClientProvider)),
+);

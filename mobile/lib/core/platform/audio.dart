@@ -33,11 +33,13 @@ class MicVoiceRecorder implements VoiceRecorder {
     final recorder = _recorder ??= AudioRecorder();
     if (!await recorder.hasPermission()) return false;
     _chunks.clear();
-    final stream = await recorder.startStream(const RecordConfig(
-      encoder: AudioEncoder.pcm16bits,
-      sampleRate: _sampleRate,
-      numChannels: 1,
-    ));
+    final stream = await recorder.startStream(
+      const RecordConfig(
+        encoder: AudioEncoder.pcm16bits,
+        sampleRate: _sampleRate,
+        numChannels: 1,
+      ),
+    );
     _sub = stream.listen(_chunks.add);
     return true;
   }

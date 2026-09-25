@@ -25,7 +25,7 @@ class FakePickers implements FilePickers {
   }
 
   @override
-  Future<UploadFile?> pickImageOrPdf() async => photo;
+  Future<UploadFile?> pickPdf() async => null;
 }
 
 class FakeMedicineRepository implements MedicineRepository {

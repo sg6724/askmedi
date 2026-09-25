@@ -17,4 +17,5 @@ class SupabaseAccountRepository implements AccountRepository {
 }
 
 final accountRepositoryProvider = Provider<AccountRepository>(
-    (ref) => SupabaseAccountRepository(ref.watch(supabaseClientProvider)));
+  (ref) => SupabaseAccountRepository(ref.watch(supabaseClientProvider)),
+);

@@ -28,13 +28,13 @@ class SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 12, bottom: 4),
-        child: Text(text,
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(fontWeight: FontWeight.w700, color: AppColors.navy)),
-      );
+    padding: const EdgeInsets.only(top: 12, bottom: 4),
+    child: Text(
+      text,
+      style: Theme.of(context).textTheme.titleSmall
+          ?.copyWith(fontWeight: FontWeight.w700, color: AppColors.navy),
+    ),
+  );
 }
 
 class BulletList extends StatelessWidget {
@@ -43,18 +43,21 @@ class BulletList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final i in items)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('•  '),
-                Expanded(child: Text(i)),
-              ]),
-            ),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      for (final i in items)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('•  '),
+              Expanded(child: Text(i)),
+            ],
+          ),
+        ),
+    ],
+  );
 }
 
 /// Cited sources as tappable links.
@@ -77,17 +80,21 @@ class SourcesList extends ConsumerWidget {
                 : () => ref.read(urlOpenerProvider)(Uri.parse(s.url)),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(children: [
-                const Icon(Icons.link, size: 16, color: AppColors.teal),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    s.title.isEmpty ? s.url : s.title,
-                    style: const TextStyle(
-                        color: AppColors.navy, decoration: TextDecoration.underline),
+              child: Row(
+                children: [
+                  const Icon(Icons.link, size: 16, color: AppColors.teal),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      s.title.isEmpty ? s.url : s.title,
+                      style: const TextStyle(
+                        color: AppColors.navy,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
                   ),
-                ),
-              ]),
+                ],
+              ),
             ),
           ),
       ],
@@ -106,9 +113,14 @@ class DisclaimerText extends StatelessWidget {
         : text!;
     return Padding(
       padding: const EdgeInsets.only(top: 12),
-      child: Text(t,
-          style: const TextStyle(
-              fontSize: 12, color: AppColors.textSecondary, fontStyle: FontStyle.italic)),
+      child: Text(
+        t,
+        style: const TextStyle(
+          fontSize: 12,
+          color: AppColors.textSecondary,
+          fontStyle: FontStyle.italic,
+        ),
+      ),
     );
   }
 }
@@ -120,17 +132,18 @@ class ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-        color: AppColors.blush,
-        child: ListTile(
-          leading: const Icon(Icons.error_outline, color: AppColors.danger),
-          title: Text(message),
-          trailing: onRetry == null
-              ? null
-              : TextButton(
-                  onPressed: onRetry,
-                  child: Text(AppLocalizations.of(context).retry)),
-        ),
-      );
+    color: AppColors.blush,
+    child: ListTile(
+      leading: const Icon(Icons.error_outline, color: AppColors.danger),
+      title: Text(message),
+      trailing: onRetry == null
+          ? null
+          : TextButton(
+              onPressed: onRetry,
+              child: Text(AppLocalizations.of(context).retry),
+            ),
+    ),
+  );
 }
 
 class EmptyState extends StatelessWidget {
@@ -140,15 +153,20 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 48, color: AppColors.textSecondary),
-            const SizedBox(height: 12),
-            Text(message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textSecondary)),
-          ]),
-        ),
-      );
+    child: Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 48, color: AppColors.textSecondary),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    ),
+  );
 }

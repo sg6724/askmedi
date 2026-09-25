@@ -3,8 +3,10 @@ import '../../../shared/source.dart';
 class Salt {
   const Salt({required this.name, this.strength});
 
-  factory Salt.fromJson(Map<String, dynamic> j) =>
-      Salt(name: (j['name'] as String?) ?? '', strength: j['strength'] as String?);
+  factory Salt.fromJson(Map<String, dynamic> j) => Salt(
+    name: (j['name'] as String?) ?? '',
+    strength: j['strength'] as String?,
+  );
 
   final String name;
   final String? strength;
@@ -14,9 +16,9 @@ class Salt {
       (strength == null || strength!.isEmpty) ? name : '$name $strength';
 
   static List<Salt> listFrom(Object? json) => [
-        for (final s in (json as List?) ?? const [])
-          Salt.fromJson(Map<String, dynamic>.from(s as Map)),
-      ];
+    for (final s in (json as List?) ?? const [])
+      Salt.fromJson(Map<String, dynamic>.from(s as Map)),
+  ];
 }
 
 class MedicineCandidate {
@@ -28,7 +30,8 @@ class MedicineCandidate {
     this.confidence,
   });
 
-  factory MedicineCandidate.fromJson(Map<String, dynamic> j) => MedicineCandidate(
+  factory MedicineCandidate.fromJson(Map<String, dynamic> j) =>
+      MedicineCandidate(
         brand: (j['brand'] as String?) ?? '',
         salts: Salt.listFrom(j['salts']),
         form: j['form'] as String?,
@@ -62,19 +65,19 @@ class MedicineInfo {
   });
 
   factory MedicineInfo.fromJson(Map<String, dynamic> j) => MedicineInfo(
-        name: (j['name'] as String?) ?? '',
-        brand: j['brand'] as String?,
-        salts: Salt.listFrom(j['salts']),
-        uses: stringList(j['uses']),
-        warnings: stringList(j['warnings']),
-        pharmacistFlags: [
-          for (final f in (j['pharmacist_flags'] as List?) ?? const [])
-            if (f is Map) (f['reason'] as String?) ?? '' else f.toString(),
-        ],
-        summary: (j['summary'] as String?) ?? '',
-        sources: Source.listFrom(j['sources']),
-        disclaimer: (j['disclaimer'] as String?) ?? '',
-      );
+    name: (j['name'] as String?) ?? '',
+    brand: j['brand'] as String?,
+    salts: Salt.listFrom(j['salts']),
+    uses: stringList(j['uses']),
+    warnings: stringList(j['warnings']),
+    pharmacistFlags: [
+      for (final f in (j['pharmacist_flags'] as List?) ?? const [])
+        if (f is Map) (f['reason'] as String?) ?? '' else f.toString(),
+    ],
+    summary: (j['summary'] as String?) ?? '',
+    sources: Source.listFrom(j['sources']),
+    disclaimer: (j['disclaimer'] as String?) ?? '',
+  );
 
   final String name;
   final String? brand;

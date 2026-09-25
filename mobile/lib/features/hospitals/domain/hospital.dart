@@ -11,15 +11,15 @@ class Hospital {
   });
 
   factory Hospital.fromJson(Map<String, dynamic> j) => Hospital(
-        name: (j['name'] as String?) ?? '',
-        lat: (j['lat'] as num?)?.toDouble() ?? 0,
-        lng: (j['lng'] as num?)?.toDouble() ?? 0,
-        distanceKm: (j['distance_km'] as num?)?.toDouble(),
-        address: j['address'] as String?,
-        phone: j['phone'] as String?,
-        emergency: j['emergency'] as bool?,
-        mapsUrl: j['maps_url'] as String?,
-      );
+    name: (j['name'] as String?) ?? '',
+    lat: (j['lat'] as num?)?.toDouble() ?? 0,
+    lng: (j['lng'] as num?)?.toDouble() ?? 0,
+    distanceKm: (j['distance_km'] as num?)?.toDouble(),
+    address: j['address'] as String?,
+    phone: j['phone'] as String?,
+    emergency: j['emergency'] as bool?,
+    mapsUrl: j['maps_url'] as String?,
+  );
 
   final String name;
   final double lat;
@@ -37,7 +37,8 @@ class Hospital {
 class HospitalSearchResult {
   const HospitalSearchResult({required this.label, required this.hospitals});
 
-  factory HospitalSearchResult.fromJson(Map<String, dynamic> j) => HospitalSearchResult(
+  factory HospitalSearchResult.fromJson(Map<String, dynamic> j) =>
+      HospitalSearchResult(
         label: ((j['location'] as Map?)?['label'] as String?) ?? '',
         hospitals: [
           for (final h in (j['hospitals'] as List?) ?? const [])
@@ -56,7 +57,9 @@ sealed class HospitalQuery {
   /// A 6-digit number is a PIN code; anything else is an area name.
   factory HospitalQuery.fromText(String text) {
     final t = text.trim();
-    return RegExp(r'^[1-9][0-9]{5}$').hasMatch(t) ? PincodeQuery(t) : AreaQuery(t);
+    return RegExp(r'^[1-9][0-9]{5}$').hasMatch(t)
+        ? PincodeQuery(t)
+        : AreaQuery(t);
   }
 
   Map<String, dynamic> toParams();

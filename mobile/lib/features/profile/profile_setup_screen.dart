@@ -65,11 +65,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }
 
   String _sexLabel(AppLocalizations l10n, Sex s) => switch (s) {
-        Sex.female => l10n.sexFemale,
-        Sex.male => l10n.sexMale,
-        Sex.other => l10n.sexOther,
-        Sex.preferNot => l10n.sexPreferNot,
-      };
+    Sex.female => l10n.sexFemale,
+    Sex.male => l10n.sexMale,
+    Sex.other => l10n.sexOther,
+    Sex.preferNot => l10n.sexPreferNot,
+  };
 
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context);
@@ -123,23 +123,30 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(_editing ? l10n.editHealthProfile : l10n.profileTitle)),
+      appBar: AppBar(
+        title: Text(_editing ? l10n.editHealthProfile : l10n.profileTitle),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          Text(l10n.profileIntro,
-              style: const TextStyle(color: AppColors.textSecondary)),
+          Text(
+            l10n.profileIntro,
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 16),
           TextField(
-              controller: _name,
-              decoration: InputDecoration(labelText: l10n.nameLabel)),
+            controller: _name,
+            decoration: InputDecoration(labelText: l10n.nameLabel),
+          ),
           const SizedBox(height: 12),
           TextField(
             controller: _birthYear,
             keyboardType: TextInputType.number,
             maxLength: 4,
             decoration: InputDecoration(
-                labelText: l10n.birthYearLabel, errorText: _birthYearError),
+              labelText: l10n.birthYearLabel,
+              errorText: _birthYearError,
+            ),
           ),
           Text(l10n.sexLabel),
           Wrap(
@@ -159,33 +166,41 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           if (_sex == Sex.female) ...[
             const SizedBox(height: 12),
             Text(l10n.pregnantLabel),
-            Wrap(spacing: 8, children: [
-              ChoiceChip(
+            Wrap(
+              spacing: 8,
+              children: [
+                ChoiceChip(
                   label: Text(l10n.yes),
                   selected: _pregnant == true,
-                  onSelected: (_) => setState(() => _pregnant = true)),
-              ChoiceChip(
+                  onSelected: (_) => setState(() => _pregnant = true),
+                ),
+                ChoiceChip(
                   label: Text(l10n.no),
                   selected: _pregnant == false,
-                  onSelected: (_) => setState(() => _pregnant = false)),
-            ]),
+                  onSelected: (_) => setState(() => _pregnant = false),
+                ),
+              ],
+            ),
           ],
           const SizedBox(height: 16),
           ChipListField(
-              label: l10n.conditionsLabel,
-              hint: l10n.addItemHint,
-              controller: _conditionsInput,
-              items: _conditions),
+            label: l10n.conditionsLabel,
+            hint: l10n.addItemHint,
+            controller: _conditionsInput,
+            items: _conditions,
+          ),
           ChipListField(
-              label: l10n.medicinesLabel,
-              hint: l10n.addItemHint,
-              controller: _medicinesInput,
-              items: _medicines),
+            label: l10n.medicinesLabel,
+            hint: l10n.addItemHint,
+            controller: _medicinesInput,
+            items: _medicines,
+          ),
           ChipListField(
-              label: l10n.allergiesLabel,
-              hint: l10n.addItemHint,
-              controller: _allergiesInput,
-              items: _allergies),
+            label: l10n.allergiesLabel,
+            hint: l10n.addItemHint,
+            controller: _allergiesInput,
+            items: _allergies,
+          ),
           if (_error != null)
             Text(_error!, style: const TextStyle(color: AppColors.danger)),
           const SizedBox(height: 24),

@@ -26,13 +26,13 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
       ConsentPurpose.values.where((p) => p.required).every((p) => _choices[p]!);
 
   String _label(AppLocalizations l10n, ConsentPurpose p) => switch (p) {
-        ConsentPurpose.age18Plus => l10n.consentAge,
-        ConsentPurpose.terms => l10n.consentTerms,
-        ConsentPurpose.history => l10n.consentHistory,
-        ConsentPurpose.media => l10n.consentMedia,
-        ConsentPurpose.voice => l10n.consentVoice,
-        ConsentPurpose.location => l10n.consentLocation,
-      };
+    ConsentPurpose.age18Plus => l10n.consentAge,
+    ConsentPurpose.terms => l10n.consentTerms,
+    ConsentPurpose.history => l10n.consentHistory,
+    ConsentPurpose.media => l10n.consentMedia,
+    ConsentPurpose.voice => l10n.consentVoice,
+    ConsentPurpose.location => l10n.consentLocation,
+  };
 
   Future<void> _save() async {
     setState(() {
@@ -52,12 +52,12 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
   }
 
   Widget _tile(AppLocalizations l10n, ConsentPurpose p) => CheckboxListTile(
-        value: _choices[p],
-        onChanged: (v) => setState(() => _choices[p] = v ?? false),
-        title: Text(_label(l10n, p)),
-        controlAffinity: ListTileControlAffinity.leading,
-        contentPadding: EdgeInsets.zero,
-      );
+    value: _choices[p],
+    onChanged: (v) => setState(() => _choices[p] = v ?? false),
+    title: Text(_label(l10n, p)),
+    controlAffinity: ListTileControlAffinity.leading,
+    contentPadding: EdgeInsets.zero,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -67,27 +67,36 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          Text(l10n.consentIntro,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(
+            l10n.consentIntro,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-                color: AppColors.peach, borderRadius: BorderRadius.circular(12)),
+              color: AppColors.peach,
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Text(l10n.consentAiNotice),
           ),
           const SizedBox(height: 16),
           for (final p in ConsentPurpose.values.where((p) => p.required))
             _tile(l10n, p),
           const Divider(height: 32),
-          Text(l10n.consentOptionalNote,
-              style: const TextStyle(color: AppColors.textSecondary)),
+          Text(
+            l10n.consentOptionalNote,
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
           for (final p in ConsentPurpose.values.where((p) => !p.required))
             _tile(l10n, p),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text(_error!, style: const TextStyle(color: AppColors.danger)),
+              child: Text(
+                _error!,
+                style: const TextStyle(color: AppColors.danger),
+              ),
             ),
           const SizedBox(height: 24),
           FilledButton(

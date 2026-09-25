@@ -9,8 +9,10 @@ import '../config/app_config.dart';
 class MeResponse {
   const MeResponse({required this.userId, this.email});
 
-  factory MeResponse.fromJson(Map<String, dynamic> json) =>
-      MeResponse(userId: json['user_id'] as String, email: json['email'] as String?);
+  factory MeResponse.fromJson(Map<String, dynamic> json) => MeResponse(
+    userId: json['user_id'] as String,
+    email: json['email'] as String?,
+  );
 
   final String userId;
   final String? email;
@@ -41,7 +43,11 @@ class ApiException implements Exception {
 
 /// A file picked by the user, held in memory so uploads work on the web too.
 class UploadFile {
-  const UploadFile({required this.bytes, required this.name, required this.mimeType});
+  const UploadFile({
+    required this.bytes,
+    required this.name,
+    required this.mimeType,
+  });
 
   final Uint8List bytes;
   final String name;
@@ -76,13 +82,15 @@ class ApiClient {
       ..baseUrl = baseUrl
       ..connectTimeout = const Duration(seconds: 10)
       ..receiveTimeout = const Duration(seconds: 90);
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final token = await tokenProvider();
-        if (token != null) options.headers['Authorization'] = 'Bearer $token';
-        handler.next(options);
-      },
-    ));
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final token = await tokenProvider();
+          if (token != null) options.headers['Authorization'] = 'Bearer $token';
+          handler.next(options);
+        },
+      ),
+    );
   }
 
   final Dio _dio;
@@ -92,24 +100,34 @@ class ApiClient {
     return MeResponse.fromJson(response.data!);
   }
 
-  Future<Map<String, dynamic>> getJson(String path, {Map<String, dynamic>? query}) =>
+  Future<Map<String, dynamic>> getJson(
+    String path, {
+    Map<String, dynamic>? query,
+  }) =>
       _call(() => _dio.get<Map<String, dynamic>>(path, queryParameters: query));
 
-  Future<Map<String, dynamic>> postJson(String path, Map<String, dynamic> body) =>
-      _call(() => _dio.post<Map<String, dynamic>>(path, data: body));
+  Future<Map<String, dynamic>> postJson(
+    String path,
+    Map<String, dynamic> body,
+  ) => _call(() => _dio.post<Map<String, dynamic>>(path, data: body));
 
   /// Sends [file] as multipart field [field]; bytes-based so it works on web.
-  Future<Map<String, dynamic>> postFile(String path, String field, UploadFile file) =>
-      _call(() => _dio.post<Map<String, dynamic>>(
-            path,
-            data: FormData.fromMap({
-              field: MultipartFile.fromBytes(
-                file.bytes,
-                filename: file.name,
-                contentType: DioMediaType.parse(file.mimeType),
-              ),
-            }),
-          ));
+  Future<Map<String, dynamic>> postFile(
+    String path,
+    String field,
+    UploadFile file,
+  ) => _call(
+    () => _dio.post<Map<String, dynamic>>(
+      path,
+      data: FormData.fromMap({
+        field: MultipartFile.fromBytes(
+          file.bytes,
+          filename: file.name,
+          contentType: DioMediaType.parse(file.mimeType),
+        ),
+      }),
+    ),
+  );
 
   /// POSTs JSON and returns the raw response body (e.g. audio).
   Future<Uint8List> postForBytes(String path, Map<String, dynamic> body) async {
@@ -126,7 +144,8 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> _call(
-      Future<Response<Map<String, dynamic>>> Function() request) async {
+    Future<Response<Map<String, dynamic>>> Function() request,
+  ) async {
     try {
       final response = await request();
       return response.data ?? const {};
@@ -138,7 +157,10 @@ class ApiClient {
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   final auth = ref.watch(authRepositoryProvider);
-  return ApiClient(baseUrl: AppConfig.apiBaseUrl, tokenProvider: auth.accessToken);
+  return ApiClient(
+    baseUrl: AppConfig.apiBaseUrl,
+    tokenProvider: auth.accessToken,
+  );
 });
 
 /// Verifies the app -> Vercel -> JWT path end-to-end (shown on Home).

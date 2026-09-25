@@ -29,7 +29,8 @@ class TrendLineChart extends StatelessWidget {
               topTitles: const AxisTitles(),
               rightTitles: const AxisTitles(),
               leftTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: true, reservedSize: 44)),
+                sideTitles: SideTitles(showTitles: true, reservedSize: 44),
+              ),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
@@ -42,8 +43,10 @@ class TrendLineChart extends StatelessWidget {
                     }
                     return SideTitleWidget(
                       meta: meta,
-                      child: Text(shortDate(points[i].date),
-                          style: const TextStyle(fontSize: 10)),
+                      child: Text(
+                        shortDate(points[i].date),
+                        style: const TextStyle(fontSize: 10),
+                      ),
                     );
                   },
                 ),
@@ -52,7 +55,8 @@ class TrendLineChart extends StatelessWidget {
             lineBarsData: [
               LineChartBarData(
                 spots: [
-                  for (final (i, p) in points.indexed) FlSpot(i.toDouble(), p.value),
+                  for (final (i, p) in points.indexed)
+                    FlSpot(i.toDouble(), p.value),
                 ],
                 color: AppColors.teal,
                 barWidth: 3,
@@ -91,11 +95,15 @@ class LabelledBarChart extends StatelessWidget {
                   showTitles: true,
                   reservedSize: 28,
                   interval: 1,
-                  getTitlesWidget: (value, meta) => value == value.roundToDouble()
+                  getTitlesWidget: (value, meta) =>
+                      value == value.roundToDouble()
                       ? SideTitleWidget(
                           meta: meta,
-                          child: Text(value.toInt().toString(),
-                              style: const TextStyle(fontSize: 10)))
+                          child: Text(
+                            value.toInt().toString(),
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                        )
                       : const SizedBox.shrink(),
                 ),
               ),
@@ -105,7 +113,8 @@ class LabelledBarChart extends StatelessWidget {
                   reservedSize: 28,
                   getTitlesWidget: (value, meta) {
                     final i = value.toInt();
-                    if (i < 0 || i >= bars.length) return const SizedBox.shrink();
+                    if (i < 0 || i >= bars.length)
+                      return const SizedBox.shrink();
                     final label = bars[i].label;
                     return SideTitleWidget(
                       meta: meta,
@@ -120,14 +129,17 @@ class LabelledBarChart extends StatelessWidget {
             ),
             barGroups: [
               for (final (i, b) in bars.indexed)
-                BarChartGroupData(x: i, barRods: [
-                  BarChartRodData(
-                    toY: b.value,
-                    color: AppColors.navy,
-                    width: 16,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ]),
+                BarChartGroupData(
+                  x: i,
+                  barRods: [
+                    BarChartRodData(
+                      toY: b.value,
+                      color: AppColors.navy,
+                      width: 16,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),

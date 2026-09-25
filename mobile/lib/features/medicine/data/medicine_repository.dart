@@ -33,13 +33,15 @@ class ApiMedicineRepository implements MedicineRepository {
     required String name,
     String? brand,
     required String language,
-  }) async =>
-      MedicineInfo.fromJson(await _api.postJson('/medicine/lookup', {
-        'name': name,
-        'brand': brand,
-        'language': language,
-      }));
+  }) async => MedicineInfo.fromJson(
+    await _api.postJson('/medicine/lookup', {
+      'name': name,
+      'brand': brand,
+      'language': language,
+    }),
+  );
 }
 
 final medicineRepositoryProvider = Provider<MedicineRepository>(
-    (ref) => ApiMedicineRepository(ref.watch(apiClientProvider)));
+  (ref) => ApiMedicineRepository(ref.watch(apiClientProvider)),
+);

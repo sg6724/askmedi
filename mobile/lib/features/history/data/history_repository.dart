@@ -20,7 +20,9 @@ class SupabaseHistoryRepository implements HistoryRepository {
     final results = await Future.wait([
       _db
           .from('episodes')
-          .select('id, started_at, symptoms, urgency, followup_count, repeat_flag')
+          .select(
+            'id, started_at, symptoms, urgency, followup_count, repeat_flag',
+          )
           .eq('kind', 'symptom')
           .order('started_at', ascending: false)
           .limit(200),
@@ -59,7 +61,8 @@ class SupabaseHistoryRepository implements HistoryRepository {
 }
 
 final historyRepositoryProvider = Provider<HistoryRepository>(
-    (ref) => SupabaseHistoryRepository(ref.watch(supabaseClientProvider)));
+  (ref) => SupabaseHistoryRepository(ref.watch(supabaseClientProvider)),
+);
 
 /// autoDispose: per-user data, dropped with the tab on sign-out.
 final historyProvider = FutureProvider.autoDispose<HistoryData>(

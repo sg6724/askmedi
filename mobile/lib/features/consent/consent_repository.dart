@@ -16,7 +16,8 @@ class SupabaseConsentRepository implements ConsentRepository {
   @override
   Future<void> save(Map<ConsentPurpose, bool> choices) async {
     await _client.from('consents').insert([
-      for (final e in choices.entries) {'purpose': e.key.wire, 'granted': e.value},
+      for (final e in choices.entries)
+        {'purpose': e.key.wire, 'granted': e.value},
     ]);
   }
 }

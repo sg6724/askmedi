@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/gen/app_localizations.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/platform/file_pickers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/charts.dart';
@@ -11,32 +13,34 @@ import '../data/report_repository.dart';
 import '../domain/report_models.dart';
 
 Color statusColor(ValueStatus s) => switch (s) {
-      ValueStatus.low => const Color(0xFF2E86DE),
-      ValueStatus.normal => AppColors.teal,
-      ValueStatus.high => AppColors.danger,
-      ValueStatus.unknown || ValueStatus.unreadable => AppColors.textSecondary,
-    };
+  ValueStatus.low => const Color(0xFF2E86DE),
+  ValueStatus.normal => AppColors.teal,
+  ValueStatus.high => AppColors.danger,
+  ValueStatus.unknown || ValueStatus.unreadable => AppColors.textSecondary,
+};
 
 String statusLabel(AppLocalizations l10n, ValueStatus s) => switch (s) {
-      ValueStatus.low => l10n.statusLow,
-      ValueStatus.normal => l10n.statusNormal,
-      ValueStatus.high => l10n.statusHigh,
-      ValueStatus.unknown => l10n.statusUnknown,
-      ValueStatus.unreadable => l10n.statusUnreadable,
-    };
+  ValueStatus.low => l10n.statusLow,
+  ValueStatus.normal => l10n.statusNormal,
+  ValueStatus.high => l10n.statusHigh,
+  ValueStatus.unknown => l10n.statusUnknown,
+  ValueStatus.unreadable => l10n.statusUnreadable,
+};
 
 /// Editable text for one extracted row.
 class _Row {
   _Row(ReportValue v)
-      : original = v,
-        test = TextEditingController(text: v.testName),
-        value = TextEditingController(text: _num(v.value)),
-        unit = TextEditingController(text: v.unit ?? ''),
-        range = TextEditingController(
-            text: v.refText ??
-                (v.refLow != null || v.refHigh != null
-                    ? '${_num(v.refLow)}-${_num(v.refHigh)}'
-                    : ''));
+    : original = v,
+      test = TextEditingController(text: v.testName),
+      value = TextEditingController(text: _num(v.value)),
+      unit = TextEditingController(text: v.unit ?? ''),
+      range = TextEditingController(
+        text:
+            v.refText ??
+            (v.refLow != null || v.refHigh != null
+                ? '${_num(v.refLow)}-${_num(v.refHigh)}'
+                : ''),
+      );
 
   final ReportValue original;
   final TextEditingController test;
@@ -44,8 +48,9 @@ class _Row {
   final TextEditingController unit;
   final TextEditingController range;
 
-  static String _num(double? d) =>
-      d == null ? '' : (d == d.roundToDouble() ? d.toInt().toString() : d.toString());
+  static String _num(double? d) => d == null
+      ? ''
+      : (d == d.roundToDouble() ? d.toInt().toString() : d.toString());
 
   ReportValue toValue() {
     final rangeText = range.text.trim();
@@ -56,8 +61,12 @@ class _Row {
       testName: test.text.trim(),
       value: v,
       unit: unit.text.trim().isEmpty ? null : unit.text.trim(),
-      refLow: rangeChanged ? parsedRange.low : original.refLow ?? parsedRange.low,
-      refHigh: rangeChanged ? parsedRange.high : original.refHigh ?? parsedRange.high,
+      refLow: rangeChanged
+          ? parsedRange.low
+          : original.refLow ?? parsedRange.low,
+      refHigh: rangeChanged
+          ? parsedRange.high
+          : original.refHigh ?? parsedRange.high,
       refText: rangeText.isEmpty ? null : rangeText,
       // The server recomputes the status from the range.
       status: v == null ? ValueStatus.unreadable : original.status,
@@ -98,10 +107,14 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     super.dispose();
   }
 
-  Future<void> _pick() async {
+  Future<void> _pick(Future<UploadFile?> Function(FilePickers) picker) async {
     final l10n = AppLocalizations.of(context);
-    final file = await ref.read(filePickersProvider).pickImageOrPdf();
+    final file = await picker(ref.read(filePickersProvider));
     if (file == null || !mounted) return;
+    if (file.bytes.length > maxUploadBytes) {
+      setState(() => _error = l10n.pdfTooLarge);
+      return;
+    }
     setState(() {
       _step = _Step.busy;
       _busyText = l10n.readingReport;
@@ -141,7 +154,9 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       _error = null;
     });
     try {
-      final summary = await ref.read(reportRepositoryProvider).confirm(
+      final summary = await ref
+          .read(reportRepositoryProvider)
+          .confirm(
             _parsed!.reportId,
             values,
             language: ref.read(appLanguageProvider),
@@ -163,7 +178,8 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    if (_step == _Step.summary) return _SummaryView(summary: _summary!, onAgain: _restart);
+    if (_step == _Step.summary)
+      return _SummaryView(summary: _summary!, onAgain: _restart);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.reportTitle)),
       body: ListView(
@@ -172,20 +188,42 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
           if (_error != null) ErrorBanner(_error!),
           ...switch (_step) {
             _Step.pick => [
-                Text(l10n.reportIntro),
-                const SizedBox(height: 20),
+              Text(l10n.reportIntro),
+              const SizedBox(height: 20),
+              // On the web the camera option also opens a file chooser.
+              if (!kIsWeb) ...[
                 FilledButton.icon(
-                  onPressed: _pick,
-                  icon: const Icon(Icons.upload_file),
-                  label: Text(l10n.chooseFile),
+                  onPressed: () =>
+                      _pick((p) => p.pickPhoto(PhotoSource.camera)),
+                  icon: const Icon(Icons.photo_camera),
+                  label: Text(l10n.takePhoto),
                 ),
-              ],
-            _Step.busy => [
-                const SizedBox(height: 48),
-                const Center(child: CircularProgressIndicator()),
                 const SizedBox(height: 12),
-                Center(child: Text(_busyText ?? '')),
               ],
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                ),
+                onPressed: () => _pick((p) => p.pickPhoto(PhotoSource.gallery)),
+                icon: const Icon(Icons.photo_library),
+                label: Text(l10n.choosePhoto),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                ),
+                onPressed: () => _pick((p) => p.pickPdf()),
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                label: Text(l10n.choosePdf),
+              ),
+            ],
+            _Step.busy => [
+              const SizedBox(height: 48),
+              const Center(child: CircularProgressIndicator()),
+              const SizedBox(height: 12),
+              Center(child: Text(_busyText ?? '')),
+            ],
             _Step.confirm => _confirmTable(l10n),
             _Step.summary => const [],
           },
@@ -195,55 +233,76 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   }
 
   void _restart() => setState(() {
-        _step = _Step.pick;
-        _summary = null;
-        _parsed = null;
-        _error = null;
-      });
+    _step = _Step.pick;
+    _summary = null;
+    _parsed = null;
+    _error = null;
+  });
 
   List<Widget> _confirmTable(AppLocalizations l10n) => [
-        Text(l10n.confirmValuesTitle, style: Theme.of(context).textTheme.titleLarge),
-        if (_parsed?.lab != null || _parsed?.reportDate != null)
-          Text([_parsed?.lab, _parsed?.reportDate].whereType<String>().join(' · '),
-              style: const TextStyle(color: AppColors.textSecondary)),
-        const SizedBox(height: 4),
-        Text(l10n.confirmValuesIntro),
-        const SizedBox(height: 12),
-        if (_rows.isEmpty) Text(l10n.noValuesFound),
-        for (final (i, r) in _rows.indexed)
-          Card(
-            key: ObjectKey(r),
-            color: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(children: [
-                Row(children: [
+    Text(
+      l10n.confirmValuesTitle,
+      style: Theme.of(context).textTheme.titleLarge,
+    ),
+    if (_parsed?.lab != null || _parsed?.reportDate != null)
+      Text(
+        [_parsed?.lab, _parsed?.reportDate].whereType<String>().join(' · '),
+        style: const TextStyle(color: AppColors.textSecondary),
+      ),
+    const SizedBox(height: 4),
+    Text(l10n.confirmValuesIntro),
+    const SizedBox(height: 12),
+    if (_rows.isEmpty) Text(l10n.noValuesFound),
+    for (final (i, r) in _rows.indexed)
+      Card(
+        key: ObjectKey(r),
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            children: [
+              Row(
+                children: [
                   Expanded(
                     child: TextField(
                       controller: r.test,
-                      decoration: InputDecoration(labelText: l10n.testName, isDense: true),
+                      decoration: InputDecoration(
+                        labelText: l10n.testName,
+                        isDense: true,
+                      ),
                     ),
                   ),
                   IconButton(
                     tooltip: l10n.removeRow,
                     icon: const Icon(Icons.delete_outline),
-                    onPressed: () => setState(() => _rows.removeAt(i).dispose()),
+                    onPressed: () =>
+                        setState(() => _rows.removeAt(i).dispose()),
                   ),
-                ]),
-                const SizedBox(height: 8),
-                Row(children: [
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
                   Expanded(
                     child: TextField(
                       controller: r.value,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(labelText: l10n.valueLabel, isDense: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: l10n.valueLabel,
+                        isDense: true,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: TextField(
                       controller: r.unit,
-                      decoration: InputDecoration(labelText: l10n.unitLabel, isDense: true),
+                      decoration: InputDecoration(
+                        labelText: l10n.unitLabel,
+                        isDense: true,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 6),
@@ -251,25 +310,30 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                     flex: 2,
                     child: TextField(
                       controller: r.range,
-                      decoration: InputDecoration(labelText: l10n.rangeLabel, isDense: true),
+                      decoration: InputDecoration(
+                        labelText: l10n.rangeLabel,
+                        isDense: true,
+                      ),
                     ),
                   ),
-                ]),
-              ]),
-            ),
+                ],
+              ),
+            ],
           ),
-        TextButton.icon(
-          onPressed: () =>
-              setState(() => _rows.add(_Row(const ReportValue(testName: '')))),
-          icon: const Icon(Icons.add),
-          label: Text(l10n.addRow),
         ),
-        const SizedBox(height: 12),
-        FilledButton(
-          onPressed: _rows.isEmpty ? null : _confirm,
-          child: Text(l10n.confirmAndExplain),
-        ),
-      ];
+      ),
+    TextButton.icon(
+      onPressed: () =>
+          setState(() => _rows.add(_Row(const ReportValue(testName: '')))),
+      icon: const Icon(Icons.add),
+      label: Text(l10n.addRow),
+    ),
+    const SizedBox(height: 12),
+    FilledButton(
+      onPressed: _rows.isEmpty ? null : _confirm,
+      child: Text(l10n.confirmAndExplain),
+    ),
+  ];
 }
 
 class _SummaryView extends StatelessWidget {
@@ -285,34 +349,44 @@ class _SummaryView extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: Text(l10n.reportTitle),
-          bottom: TabBar(tabs: [
-            Tab(text: l10n.tabSummary),
-            Tab(text: l10n.tabKeyValues),
-            Tab(text: l10n.tabChart),
-          ]),
-        ),
-        body: TabBarView(children: [
-          ListView(padding: const EdgeInsets.all(20), children: [
-            Text(summary.summary),
-            if (summary.highlights.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              BulletList(summary.highlights),
+          bottom: TabBar(
+            tabs: [
+              Tab(text: l10n.tabSummary),
+              Tab(text: l10n.tabKeyValues),
+              Tab(text: l10n.tabChart),
             ],
-            SourcesList(summary.sources),
-            DisclaimerText(summary.disclaimer),
-            const SizedBox(height: 20),
-            OutlinedButton.icon(
-              onPressed: onAgain,
-              icon: const Icon(Icons.upload_file),
-              label: Text(l10n.uploadAnother),
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                Text(summary.summary),
+                if (summary.highlights.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  BulletList(summary.highlights),
+                ],
+                SourcesList(summary.sources),
+                DisclaimerText(summary.disclaimer),
+                const SizedBox(height: 20),
+                OutlinedButton.icon(
+                  onPressed: onAgain,
+                  icon: const Icon(Icons.upload_file),
+                  label: Text(l10n.uploadAnother),
+                ),
+              ],
             ),
-          ]),
-          ListView(padding: const EdgeInsets.all(12), children: [
-            for (final v in summary.values) KeyValueTile(value: v),
-            DisclaimerText(summary.disclaimer),
-          ]),
-          _ChartTab(values: summary.values),
-        ]),
+            ListView(
+              padding: const EdgeInsets.all(12),
+              children: [
+                for (final v in summary.values) KeyValueTile(value: v),
+                DisclaimerText(summary.disclaimer),
+              ],
+            ),
+            _ChartTab(values: summary.values),
+          ],
+        ),
       ),
     );
   }
@@ -330,7 +404,10 @@ class KeyValueTile extends StatelessWidget {
     return Card(
       color: Colors.white,
       child: ListTile(
-        title: Text(value.testName, style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          value.testName,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: value.refText == null || value.refText!.isEmpty
             ? null
             : Text('${l10n.rangeLabel}: ${value.refText}'),
@@ -346,10 +423,13 @@ class KeyValueTile extends StatelessWidget {
               margin: const EdgeInsets.only(top: 2),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10)),
-              child: Text(statusLabel(l10n, value.status),
-                  style: TextStyle(fontSize: 11, color: color)),
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                statusLabel(l10n, value.status),
+                style: TextStyle(fontSize: 11, color: color),
+              ),
             ),
           ],
         ),
@@ -379,27 +459,44 @@ class _ChartTabState extends ConsumerState<_ChartTab> {
       for (final v in widget.values)
         if (v.value != null && v.testName.isNotEmpty) v.testName,
     }.toList();
-    if (tests.isEmpty) return EmptyState(l10n.chartEmpty, icon: Icons.show_chart);
-    final test = (_test != null && tests.contains(_test)) ? _test! : tests.first;
+    if (tests.isEmpty)
+      return EmptyState(l10n.chartEmpty, icon: Icons.show_chart);
+    final test = (_test != null && tests.contains(_test))
+        ? _test!
+        : tests.first;
     final history = ref.watch(testHistoryProvider(test));
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      DropdownButtonFormField<String>(
-        initialValue: test,
-        decoration: InputDecoration(labelText: l10n.testName),
-        items: [for (final t in tests) DropdownMenuItem(value: t, child: Text(t))],
-        onChanged: (t) => setState(() => _test = t),
-      ),
-      const SizedBox(height: 12),
-      history.when(
-        data: (points) => points.isEmpty
-            ? EmptyState(l10n.chartEmpty, icon: Icons.show_chart)
-            : TrendLineChart(
-                points: [for (final p in points) (date: p.date, value: p.value)]),
-        error: (e, _) => ErrorBanner(apiErrorMessage(l10n, e),
-            onRetry: () => ref.invalidate(testHistoryProvider(test))),
-        loading: () => const Center(
-            child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator())),
-      ),
-    ]);
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        DropdownButtonFormField<String>(
+          initialValue: test,
+          decoration: InputDecoration(labelText: l10n.testName),
+          items: [
+            for (final t in tests) DropdownMenuItem(value: t, child: Text(t)),
+          ],
+          onChanged: (t) => setState(() => _test = t),
+        ),
+        const SizedBox(height: 12),
+        history.when(
+          data: (points) => points.isEmpty
+              ? EmptyState(l10n.chartEmpty, icon: Icons.show_chart)
+              : TrendLineChart(
+                  points: [
+                    for (final p in points) (date: p.date, value: p.value),
+                  ],
+                ),
+          error: (e, _) => ErrorBanner(
+            apiErrorMessage(l10n, e),
+            onRetry: () => ref.invalidate(testHistoryProvider(test)),
+          ),
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

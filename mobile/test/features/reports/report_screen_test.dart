@@ -12,12 +12,23 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../helpers/pump_router.dart';
 
 class FakePickers implements FilePickers {
-  @override
-  Future<UploadFile?> pickPhoto(PhotoSource source) async => null;
+  FakePickers({this.pdfBytes = 4});
+  final int pdfBytes;
+  PhotoSource? photoFrom;
 
   @override
-  Future<UploadFile?> pickImageOrPdf() async => UploadFile(
-    bytes: Uint8List.fromList([37, 80, 68, 70]),
+  Future<UploadFile?> pickPhoto(PhotoSource source) async {
+    photoFrom = source;
+    return UploadFile(
+      bytes: Uint8List(10),
+      name: 'cbc.jpg',
+      mimeType: 'image/jpeg',
+    );
+  }
+
+  @override
+  Future<UploadFile?> pickPdf() async => UploadFile(
+    bytes: Uint8List(pdfBytes),
     name: 'cbc.pdf',
     mimeType: 'application/pdf',
   );
@@ -28,9 +39,11 @@ class FakeReportRepository implements ReportRepository {
   final Exception? parseError;
   List<ReportValue>? confirmed;
   String? confirmedId;
+  final parsedFiles = <UploadFile>[];
 
   @override
   Future<ParsedReport> parse(UploadFile file) async {
+    parsedFiles.add(file);
     if (parseError != null) throw parseError!;
     return ParsedReport.fromJson({
       'report_id': 'r-1',
@@ -104,7 +117,7 @@ void main() {
         ],
       );
 
-      await tester.tap(find.text('Choose image or PDF'));
+      await tester.tap(find.text('Choose PDF'));
       await tester.pumpAndSettle();
       expect(find.text('Check the values'), findsOneWidget);
       expect(find.text('City Lab · 2026-09-01'), findsOneWidget);
@@ -153,10 +166,57 @@ void main() {
       ],
     );
 
-    await tester.tap(find.text('Choose image or PDF'));
+    await tester.tap(find.text('Choose PDF'));
     await tester.pumpAndSettle();
 
-    expect(find.text('This file is too large.'), findsOneWidget);
-    expect(find.text('Choose image or PDF'), findsOneWidget);
+    expect(
+      find.text('This file is too large (max 4 MB). Try a photo instead.'),
+      findsOneWidget,
+    );
+    expect(find.text('Choose PDF'), findsOneWidget);
+  });
+
+  testWidgets('a PDF over 4 MB is stopped before upload', (tester) async {
+    final repo = FakeReportRepository();
+    await pumpRouted(
+      tester,
+      const ReportScreen(),
+      overrides: [
+        filePickersProvider.overrideWithValue(
+          FakePickers(pdfBytes: maxUploadBytes + 1),
+        ),
+        reportRepositoryProvider.overrideWithValue(repo),
+      ],
+    );
+
+    await tester.tap(find.text('Choose PDF'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'This file is larger than 4 MB. Take a photo of each page instead.',
+      ),
+      findsOneWidget,
+    );
+    expect(repo.parsedFiles, isEmpty);
+  });
+
+  testWidgets('photos come through the resizing photo picker', (tester) async {
+    final pickers = FakePickers();
+    final repo = FakeReportRepository();
+    await pumpRouted(
+      tester,
+      const ReportScreen(),
+      overrides: [
+        filePickersProvider.overrideWithValue(pickers),
+        reportRepositoryProvider.overrideWithValue(repo),
+      ],
+    );
+
+    await tester.tap(find.text('Choose photo'));
+    await tester.pumpAndSettle();
+
+    expect(pickers.photoFrom, PhotoSource.gallery);
+    expect(repo.parsedFiles.single.mimeType, 'image/jpeg');
   });
 }

@@ -49,5 +49,6 @@ class GeolocatorLocationService implements LocationService {
   }
 }
 
-final locationServiceProvider =
-    Provider<LocationService>((ref) => GeolocatorLocationService());
+final locationServiceProvider = Provider<LocationService>(
+  (ref) => GeolocatorLocationService(),
+);

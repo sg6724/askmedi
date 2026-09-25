@@ -11,13 +11,15 @@ class SymptomEpisode {
   });
 
   factory SymptomEpisode.fromRow(Map<String, dynamic> r) => SymptomEpisode(
-        id: r['id'] as String,
-        startedAt: DateTime.parse(r['started_at'] as String),
-        symptoms: [for (final s in (r['symptoms'] as List?) ?? const []) s.toString()],
-        urgency: r['urgency'] as String?,
-        followupCount: (r['followup_count'] as num?)?.toInt() ?? 0,
-        repeatFlag: (r['repeat_flag'] as bool?) ?? false,
-      );
+    id: r['id'] as String,
+    startedAt: DateTime.parse(r['started_at'] as String),
+    symptoms: [
+      for (final s in (r['symptoms'] as List?) ?? const []) s.toString(),
+    ],
+    urgency: r['urgency'] as String?,
+    followupCount: (r['followup_count'] as num?)?.toInt() ?? 0,
+    repeatFlag: (r['repeat_flag'] as bool?) ?? false,
+  );
 
   final String id;
   final DateTime startedAt;
@@ -28,9 +30,15 @@ class SymptomEpisode {
 }
 
 class MedicineLookupItem {
-  const MedicineLookupItem({required this.id, required this.createdAt, required this.query, this.brand});
+  const MedicineLookupItem({
+    required this.id,
+    required this.createdAt,
+    required this.query,
+    this.brand,
+  });
 
-  factory MedicineLookupItem.fromRow(Map<String, dynamic> r) => MedicineLookupItem(
+  factory MedicineLookupItem.fromRow(Map<String, dynamic> r) =>
+      MedicineLookupItem(
         id: r['id'] as String,
         createdAt: DateTime.parse(r['created_at'] as String),
         query: (r['query'] as String?) ?? '',
@@ -53,12 +61,14 @@ class ReportItem {
   });
 
   factory ReportItem.fromRow(Map<String, dynamic> r) => ReportItem(
-        id: r['id'] as String,
-        createdAt: DateTime.parse(r['created_at'] as String),
-        reportDate: r['report_date'] == null ? null : DateTime.parse(r['report_date'] as String),
-        lab: r['lab'] as String?,
-        confirmed: r['status'] == 'confirmed',
-      );
+    id: r['id'] as String,
+    createdAt: DateTime.parse(r['created_at'] as String),
+    reportDate: r['report_date'] == null
+        ? null
+        : DateTime.parse(r['report_date'] as String),
+    lab: r['lab'] as String?,
+    confirmed: r['status'] == 'confirmed',
+  );
 
   final String id;
   final DateTime createdAt;
@@ -84,7 +94,10 @@ class HistoryData {
   final Map<String, List<TestPoint>> values;
 
   bool get isEmpty =>
-      episodes.isEmpty && medicines.isEmpty && reports.isEmpty && values.isEmpty;
+      episodes.isEmpty &&
+      medicines.isEmpty &&
+      reports.isEmpty &&
+      values.isEmpty;
 }
 
 enum HistoryFilter { all, symptoms, medicines, reports }
@@ -151,7 +164,10 @@ List<({DateTime weekStart, int count})> episodesPerWeek(
 }
 
 /// The most mentioned symptoms, case-insensitively, most frequent first.
-List<({String name, int count})> topSymptoms(List<SymptomEpisode> episodes, {int limit = 5}) {
+List<({String name, int count})> topSymptoms(
+  List<SymptomEpisode> episodes, {
+  int limit = 5,
+}) {
   final counts = <String, int>{};
   final display = <String, String>{};
   for (final e in episodes) {
@@ -163,13 +179,21 @@ List<({String name, int count})> topSymptoms(List<SymptomEpisode> episodes, {int
     }
   }
   final sorted = counts.entries.toList()
-    ..sort((a, b) => b.value != a.value ? b.value.compareTo(a.value) : a.key.compareTo(b.key));
-  return [for (final e in sorted.take(limit)) (name: display[e.key]!, count: e.value)];
+    ..sort(
+      (a, b) => b.value != a.value
+          ? b.value.compareTo(a.value)
+          : a.key.compareTo(b.key),
+    );
+  return [
+    for (final e in sorted.take(limit)) (name: display[e.key]!, count: e.value),
+  ];
 }
 
 /// Null when there are no symptom checks.
 double? averageFollowups(List<SymptomEpisode> episodes) => episodes.isEmpty
     ? null
-    : episodes.map((e) => e.followupCount).reduce((a, b) => a + b) / episodes.length;
+    : episodes.map((e) => e.followupCount).reduce((a, b) => a + b) /
+          episodes.length;
 
-int repeatCount(List<SymptomEpisode> episodes) => episodes.where((e) => e.repeatFlag).length;
+int repeatCount(List<SymptomEpisode> episodes) =>
+    episodes.where((e) => e.repeatFlag).length;
