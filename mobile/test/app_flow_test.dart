@@ -10,7 +10,10 @@ import 'package:askmedi/features/auth/auth_repository.dart';
 import 'package:askmedi/features/auth/sign_in_screen.dart';
 import 'package:askmedi/features/consent/consent_purpose.dart';
 import 'package:askmedi/features/consent/consent_repository.dart';
+import 'package:askmedi/features/history/data/history_repository.dart';
+import 'package:askmedi/features/history/domain/history_models.dart';
 import 'package:askmedi/features/home/home_screen.dart';
+import 'package:askmedi/features/profile/data/account_repository.dart';
 import 'package:askmedi/features/profile/health_profile.dart';
 import 'package:askmedi/features/profile/onboarding_repository.dart';
 import 'package:askmedi/features/profile/profile_repository.dart';
@@ -117,6 +120,33 @@ class FakeProfileRepository implements ProfileRepository {
       profileComplete: true,
     );
   }
+
+  @override
+  Future<HealthProfile?> loadProfile() async => saved;
+
+  @override
+  Future<void> updateProfile(HealthProfile profile, {required String language}) async {
+    saved = profile;
+    savedLanguage = language;
+  }
+}
+
+class FakeHistoryRepository implements HistoryRepository {
+  @override
+  Future<HistoryData> load() async => const HistoryData();
+}
+
+class FakeAccountRepository implements AccountRepository {
+  FakeAccountRepository(this._auth);
+  final FakeAuthRepository _auth;
+  int deletes = 0;
+
+  @override
+  Future<void> deleteAccount() async {
+    deletes++;
+    // The real RPC removes the user; the session is then useless.
+    expect(_auth.isSignedIn, isTrue);
+  }
 }
 
 // -- Harness ---------------------------------------------------------------
@@ -139,12 +169,14 @@ class World {
        onboarding = FakeOnboardingRepository(status, error: fetchError) {
     consent = FakeConsentRepository(onboarding);
     profile = FakeProfileRepository(onboarding);
+    account = FakeAccountRepository(auth);
   }
 
   final FakeAuthRepository auth;
   final FakeOnboardingRepository onboarding;
   late final FakeConsentRepository consent;
   late final FakeProfileRepository profile;
+  late final FakeAccountRepository account;
 
   /// Read by the `displayNameProvider` override each time it is (re)computed.
   String? displayName;
@@ -181,6 +213,8 @@ Future<void> pumpApp(
         onboardingRepositoryProvider.overrideWithValue(world.onboarding),
         consentRepositoryProvider.overrideWithValue(world.consent),
         profileRepositoryProvider.overrideWithValue(world.profile),
+        historyRepositoryProvider.overrideWithValue(FakeHistoryRepository()),
+        accountRepositoryProvider.overrideWithValue(world.account),
         // Overrides keep the real providers' autoDispose/retry behaviour, so
         // these exercise the production provider configuration.
         meProvider.overrideWith((ref) async {
@@ -288,7 +322,9 @@ void main() {
     expect(find.text('Hello!'), findsOneWidget);
   });
 
-  testWidgets('tab placeholders use localised titles (Hindi)', (tester) async {
+  testWidgets('History and Hospitals tabs use localised titles (Hindi)', (
+    tester,
+  ) async {
     await pumpApp(
       tester,
       World(signedIn: true, status: _done),
@@ -298,7 +334,6 @@ void main() {
 
     await tester.tap(inNavBar(hi.tabHistory));
     await tester.pumpAndSettle();
-    expect(find.text(hi.comingSoon), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(AppBar),
@@ -306,6 +341,8 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(find.text(hi.timelineTab), findsOneWidget);
+    expect(find.text(hi.historyEmpty), findsOneWidget);
 
     await tester.tap(inNavBar(hi.tabHospitals));
     await tester.pumpAndSettle();
@@ -316,8 +353,58 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(find.text(hi.useMyLocation), findsOneWidget);
     expect(find.text('History'), findsNothing);
     expect(find.text('Hospitals'), findsNothing);
+  });
+
+  testWidgets('Home actions open chat, emergency and the Hospitals tab', (
+    tester,
+  ) async {
+    await pumpApp(tester, World(signedIn: true, status: _done));
+
+    await tester.tap(find.text('Check symptoms'));
+    await tester.pumpAndSettle();
+    expect(locationOf(tester), Routes.chat);
+    expect(find.textContaining('AI assistant'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Emergency'));
+    await tester.pumpAndSettle();
+    expect(locationOf(tester), Routes.emergency);
+    expect(find.text('Call 112 — Emergency'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Find hospital'));
+    await tester.pumpAndSettle();
+    expect(locationOf(tester), Routes.hospitals);
+    expect(find.text('Use my location'), findsOneWidget);
+  });
+
+  testWidgets('delete account: confirm -> RPC -> signed out', (tester) async {
+    final world = World(signedIn: true, status: _done);
+    await pumpApp(tester, world);
+
+    await tester.tap(inNavBar('Profile'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete account and all data'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete your account?'), findsOneWidget);
+
+    // Cancel does nothing.
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(world.account.deletes, 0);
+
+    await tester.tap(find.text('Delete account and all data'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(world.account.deletes, 1);
+    expect(find.text('Sign in to AskMedi'), findsOneWidget);
   });
 
   testWidgets('onboarding advances: consent -> profile -> home', (

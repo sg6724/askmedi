@@ -14,6 +14,14 @@ abstract final class Routes {
   static const hospitals = '/hospitals';
   static const profile = '/profile';
 
+  // Full-screen pages opened on top of the tabs.
+  static const chat = '/chat';
+  static const talk = '/talk';
+  static const emergency = '/emergency';
+  static const medicine = '/medicine';
+  static const report = '/report';
+  static const editProfile = '/edit-profile';
+
   static const preApp = {
     splash,
     language,

@@ -5,16 +5,20 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/auth_repository.dart';
 import '../../features/auth/sign_in_screen.dart';
 import '../../features/consent/consent_screen.dart';
+import '../../features/chat/presentation/chat_screen.dart';
+import '../../features/emergency/presentation/emergency_screen.dart';
+import '../../features/history/presentation/history_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/home/home_shell.dart';
-import '../../features/home/placeholder_tab.dart';
-import '../../features/home/profile_tab.dart';
+import '../../features/hospitals/presentation/hospitals_screen.dart';
+import '../../features/medicine/presentation/medicine_screen.dart';
+import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/reports/presentation/report_screen.dart';
 import '../../features/onboarding/language_screen.dart';
 import '../../features/onboarding/locale_controller.dart';
 import '../../features/onboarding/splash_screen.dart';
 import '../../features/profile/onboarding_repository.dart';
 import '../../features/profile/profile_setup_screen.dart';
-import '../l10n/gen/app_localizations.dart';
 import 'app_status.dart';
 import 'routes.dart';
 
@@ -71,22 +75,30 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(
-                path: Routes.history,
-                builder: (context, _) => PlaceholderTab(
-                    title: AppLocalizations.of(context).tabHistory)),
+            GoRoute(path: Routes.history, builder: (_, _) => const HistoryScreen()),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
-                path: Routes.hospitals,
-                builder: (context, _) => PlaceholderTab(
-                    title: AppLocalizations.of(context).tabHospitals)),
+                path: Routes.hospitals, builder: (_, _) => const HospitalsScreen()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(path: Routes.profile, builder: (_, _) => const ProfileTab()),
+            GoRoute(path: Routes.profile, builder: (_, _) => const ProfileScreen()),
           ]),
         ],
       ),
+      GoRoute(path: Routes.chat, builder: (_, _) => const ChatScreen()),
+      GoRoute(path: Routes.talk, builder: (_, _) => const ChatScreen(voice: true)),
+      GoRoute(
+        path: Routes.emergency,
+        builder: (_, state) => EmergencyScreen(
+            args: state.extra is EmergencyArgs
+                ? state.extra! as EmergencyArgs
+                : const EmergencyArgs()),
+      ),
+      GoRoute(path: Routes.medicine, builder: (_, _) => const MedicineScreen()),
+      GoRoute(path: Routes.report, builder: (_, _) => const ReportScreen()),
+      GoRoute(
+          path: Routes.editProfile, builder: (_, _) => const EditProfileScreen()),
     ],
   );
 });

@@ -9,9 +9,12 @@ import 'profile_repository.dart';
 import 'profile_validators.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
-  const ProfileSetupScreen({super.key, required this.onSaved});
+  const ProfileSetupScreen({super.key, required this.onSaved, this.initial});
 
   final VoidCallback onSaved;
+
+  /// When set, the screen edits this stored profile instead of onboarding.
+  final HealthProfile? initial;
 
   @override
   ConsumerState<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
@@ -33,6 +36,23 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   String? _birthYearError;
   String? _error;
   bool _busy = false;
+
+  bool get _editing => widget.initial != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.initial;
+    if (p != null) {
+      _name.text = p.displayName ?? '';
+      _birthYear.text = p.birthYear > 0 ? '${p.birthYear}' : '';
+      _sex = p.sex;
+      _pregnant = p.pregnant;
+      _conditions.addAll(p.conditions);
+      _medicines.addAll(p.medicines);
+      _allergies.addAll(p.allergies);
+    }
+  }
 
   @override
   void dispose() {
@@ -75,18 +95,22 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     });
     try {
       final name = _name.text.trim();
-      await ref.read(profileRepositoryProvider).saveOnboardingProfile(
-            HealthProfile(
-              displayName: name.isEmpty ? null : name,
-              birthYear: int.parse(_birthYear.text.trim()),
-              sex: _sex,
-              pregnant: _pregnant,
-              conditions: List.of(_conditions),
-              medicines: List.of(_medicines),
-              allergies: List.of(_allergies),
-            ),
-            language: ref.read(localeControllerProvider)?.languageCode ?? 'en',
-          );
+      final profile = HealthProfile(
+        displayName: name.isEmpty ? null : name,
+        birthYear: int.parse(_birthYear.text.trim()),
+        sex: _sex,
+        pregnant: _pregnant,
+        conditions: List.of(_conditions),
+        medicines: List.of(_medicines),
+        allergies: List.of(_allergies),
+      );
+      final language = ref.read(localeControllerProvider)?.languageCode ?? 'en';
+      final repo = ref.read(profileRepositoryProvider);
+      if (_editing) {
+        await repo.updateProfile(profile, language: language);
+      } else {
+        await repo.saveOnboardingProfile(profile, language: language);
+      }
       widget.onSaved();
     } catch (_) {
       if (mounted) setState(() => _error = l10n.genericError);
@@ -99,7 +123,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.profileTitle)),
+      appBar: AppBar(title: Text(_editing ? l10n.editHealthProfile : l10n.profileTitle)),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -167,7 +191,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           const SizedBox(height: 24),
           FilledButton(
             onPressed: _busy ? null : _save,
-            child: Text(l10n.saveAndContinue),
+            child: Text(_editing ? l10n.save : l10n.saveAndContinue),
           ),
         ],
       ),

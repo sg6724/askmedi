@@ -16,6 +16,7 @@ class _SavedCall {
 
 class _FakeProfileRepository implements ProfileRepository {
   final calls = <_SavedCall>[];
+  final updates = <_SavedCall>[];
 
   @override
   Future<void> saveOnboardingProfile(
@@ -23,6 +24,14 @@ class _FakeProfileRepository implements ProfileRepository {
     required String language,
   }) async {
     calls.add(_SavedCall(profile, language));
+  }
+
+  @override
+  Future<HealthProfile?> loadProfile() async => null;
+
+  @override
+  Future<void> updateProfile(HealthProfile profile, {required String language}) async {
+    updates.add(_SavedCall(profile, language));
   }
 }
 
@@ -40,6 +49,7 @@ void main() {
     Map<String, Object> prefsValues = const {},
     Size viewport = const Size(1080, 3000),
     double textScale = 1.0,
+    HealthProfile? initial,
   }) async {
     tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1.0;
@@ -53,7 +63,7 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     await pumpLocalized(
       tester,
-      ProfileSetupScreen(onSaved: () => saved++),
+      ProfileSetupScreen(onSaved: () => saved++, initial: initial),
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         profileRepositoryProvider.overrideWithValue(repo),
@@ -218,6 +228,29 @@ void main() {
 
     expect(repo.calls, hasLength(1));
     expect(repo.calls.single.profile.conditions, ['Diabetes']);
+    expect(saved, 1);
+  });
+
+  testWidgets('edit mode: prefilled from the stored profile, saves via updateProfile',
+      (tester) async {
+    await pumpScreen(tester,
+        initial: const HealthProfile(
+            displayName: 'Asha', birthYear: 1990, conditions: ['Asthma']));
+
+    expect(find.text('Edit health profile'), findsOneWidget);
+    expect(find.widgetWithText(InputChip, 'Asthma'), findsOneWidget);
+    expect(find.text('1990'), findsOneWidget);
+
+    await tester.enterText(chipField('Allergies'), 'Dust');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(repo.calls, isEmpty);
+    expect(repo.updates, hasLength(1));
+    final p = repo.updates.single.profile;
+    expect(p.displayName, 'Asha');
+    expect(p.conditions, ['Asthma']);
+    expect(p.allergies, ['Dust']);
     expect(saved, 1);
   });
 }
