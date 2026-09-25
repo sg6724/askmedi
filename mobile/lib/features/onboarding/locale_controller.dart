@@ -22,3 +22,8 @@ class LocaleController extends Notifier<Locale?> {
 
 final localeControllerProvider =
     NotifierProvider<LocaleController, Locale?>(LocaleController.new);
+
+/// The language code sent to the API (`en`, `hi` or `mr`).
+final appLanguageProvider = Provider<String>(
+  (ref) => ref.watch(localeControllerProvider)?.languageCode ?? 'en',
+);

@@ -18,6 +18,10 @@ class _FakeApiClient implements ApiClient {
     if (fail) throw Exception('offline');
     return const MeResponse(userId: 'u-1');
   }
+
+  // Feature endpoints are not used by these tests.
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 /// Every call (i.e. `from(...)`) fails, like an unreachable Supabase.

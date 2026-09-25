@@ -55,11 +55,191 @@
   "tabHospitals": "Hospitals",
   "tabProfile": "Profile",
   "greeting": "Hello, {name}!",
-  "@greeting": { "placeholders": { "name": { "type": "String" } } },
+  "@greeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "greetingNoName": "Hello!",
   "howCanIHelp": "How can I help you today?",
   "comingSoon": "Coming soon",
   "signOut": "Sign out",
   "serverConnected": "Connected to AskMedi server",
-  "serverUnreachable": "Can't reach the server"
+  "serverUnreachable": "Can't reach the server",
+  "homeCheckSymptoms": "Check symptoms",
+  "homeCheckSymptomsSub": "Tell us how you feel",
+  "homeTalk": "Talk",
+  "homeTalkSub": "Speak instead of typing",
+  "homeScanMedicine": "Scan medicine",
+  "homeScanMedicineSub": "Know what a medicine is for",
+  "homeUploadReport": "Upload report",
+  "homeUploadReportSub": "Understand your lab results",
+  "homeFindHospital": "Find hospital",
+  "homeFindHospitalSub": "Hospitals and clinics near you",
+  "emergencyButton": "Emergency",
+  "disclaimerDefault": "AskMedi gives health information, not a diagnosis. Please consult a doctor.",
+  "sourcesTitle": "Sources",
+  "serviceBusy": "The service is busy. Please try again in a minute.",
+  "networkError": "Can't reach AskMedi. Check your internet connection.",
+  "fileTooLarge": "This file is too large.",
+  "unsupportedFile": "This file type is not supported.",
+  "cancel": "Cancel",
+  "findHospital": "Find a hospital",
+  "chatTitle": "Check symptoms",
+  "aiDisclosure": "You are talking to an AI assistant, not a doctor. It gives health information, not a diagnosis.",
+  "chatWelcome": "Tell me what is bothering you, in your own words.",
+  "chatHint": "Describe how you feel…",
+  "send": "Send",
+  "newChat": "New conversation",
+  "thinking": "Thinking…",
+  "readbackLabel": "I understood:",
+  "urgencyEmergency": "Emergency — get help now",
+  "urgencySeeDoctorToday": "See a doctor today",
+  "urgencySeeDoctorSoon": "See a doctor in the next few days",
+  "urgencySelfCare": "Care at home for now — watch for changes",
+  "possibleCauses": "Possible causes",
+  "likelihoodMoreLikely": "More likely",
+  "likelihoodPossible": "Possible",
+  "likelihoodLessLikely": "Less likely",
+  "doNow": "What you can do now",
+  "seekCareIf": "See a doctor if",
+  "openEmergency": "Open emergency help",
+  "speak": "Speak",
+  "listening": "Listening… tap to stop",
+  "transcribing": "Understanding your voice…",
+  "voiceUnavailable": "Voice is not available right now. You can still type.",
+  "micDenied": "Microphone access was denied.",
+  "voiceNotHeard": "Couldn't hear anything. Please try again.",
+  "emergencyTitle": "Emergency",
+  "emergencyGeneric": "If you or someone near you is in danger, call for help now.",
+  "emergencySource": "Source: {title}",
+  "@emergencySource": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "call112": "Call 112 — Emergency",
+  "call108": "Call 108 — Ambulance",
+  "call102": "Call 102 — Mother & child ambulance",
+  "shareLocation": "Share my location",
+  "shareViaWhatsApp": "Send on WhatsApp",
+  "shareViaSms": "Send as SMS",
+  "shareLocationMessage": "I need help. My location: {url}",
+  "@shareLocationMessage": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "emergencyNote": "AskMedi never calls or sends messages on its own. You choose.",
+  "locationDenied": "Location permission was denied.",
+  "locationServiceOff": "Location is turned off. Please turn it on and try again.",
+  "locationUnavailable": "Couldn't get your location. Please try again.",
+  "medicineTitle": "Scan medicine",
+  "medicineIntro": "Take a clear photo of the strip or box so the name is readable.",
+  "takePhoto": "Take photo",
+  "choosePhoto": "Choose photo",
+  "typeNameInstead": "Type the name instead",
+  "medicineNameLabel": "Medicine name",
+  "lookUp": "Look up",
+  "scanning": "Reading the photo…",
+  "loadingInfo": "Looking it up…",
+  "isThisMedicine": "Is this {brand} ({salts})?",
+  "@isThisMedicine": {
+    "placeholders": {
+      "brand": {
+        "type": "String"
+      },
+      "salts": {
+        "type": "String"
+      }
+    }
+  },
+  "yesThatsIt": "Yes, that's it",
+  "otherMatches": "Or is it one of these?",
+  "unreadableImage": "Couldn't read the medicine name. Try a clearer photo or type the name.",
+  "uses": "Uses",
+  "warnings": "Warnings",
+  "pharmacistFlagsTitle": "Check with your pharmacist",
+  "scanAnother": "Scan another medicine",
+  "reportTitle": "Upload report",
+  "reportIntro": "Upload a photo or PDF of your lab report. The file is read once and not stored.",
+  "chooseFile": "Choose image or PDF",
+  "readingReport": "Reading your report…",
+  "confirmValuesTitle": "Check the values",
+  "confirmValuesIntro": "Correct anything that was read wrongly, then confirm.",
+  "testName": "Test",
+  "valueLabel": "Value",
+  "unitLabel": "Unit",
+  "rangeLabel": "Normal range",
+  "addRow": "Add a test",
+  "removeRow": "Remove",
+  "confirmAndExplain": "Confirm and explain",
+  "noValuesFound": "No test values were found in this report.",
+  "tabSummary": "Summary",
+  "tabKeyValues": "Key values",
+  "tabChart": "Chart",
+  "statusLow": "Low",
+  "statusNormal": "Normal",
+  "statusHigh": "High",
+  "statusUnknown": "No range",
+  "statusUnreadable": "Unreadable",
+  "chartEmpty": "No numeric values for this test yet.",
+  "uploadAnother": "Upload another report",
+  "hospitalsIntro": "Search near you, by PIN code or by area name.",
+  "useMyLocation": "Use my location",
+  "pincodeOrArea": "PIN code or area",
+  "search": "Search",
+  "hospitalsNear": "Near {label}",
+  "@hospitalsNear": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "noHospitals": "No hospitals found nearby. Try another area.",
+  "locationNotFound": "We couldn't find that place. Check the PIN code or area.",
+  "directoryUnavailable": "The hospital directory is not responding. Please try again.",
+  "distanceKm": "{km} km",
+  "@distanceKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "callButton": "Call",
+  "directions": "Directions",
+  "emergencyCare": "Emergency care",
+  "timelineTab": "Timeline",
+  "analyticsTab": "Analytics",
+  "filterAll": "All",
+  "filterSymptoms": "Symptoms",
+  "filterMedicines": "Medicines",
+  "filterReports": "Reports",
+  "historyEmpty": "Nothing here yet. Your symptom checks, medicine scans and reports will appear here.",
+  "symptomCheck": "Symptom check",
+  "medicineLookup": "Medicine lookup",
+  "labReport": "Lab report",
+  "reportDraft": "Not confirmed",
+  "episodesPerWeek": "Symptom checks per week",
+  "topSymptoms": "Most frequent symptoms",
+  "reportTrends": "Report values over time",
+  "avgFollowups": "Average follow-up questions per check",
+  "repeatBanner": "You have asked about the same symptoms several times. Please see a doctor.",
+  "analyticsEmpty": "No data yet. Analytics appear after you use AskMedi.",
+  "noReportValues": "No report values yet.",
+  "editHealthProfile": "Edit health profile",
+  "languageLabel": "Language",
+  "save": "Save",
+  "deleteAccount": "Delete account and all data",
+  "deleteAccountConfirmTitle": "Delete your account?",
+  "deleteAccountConfirmBody": "This permanently deletes your account, health profile, history, medicine lookups and reports. It cannot be undone.",
+  "deleteConfirm": "Delete"
 }
