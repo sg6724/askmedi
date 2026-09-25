@@ -7,10 +7,42 @@ abstract interface class AuthRepository {
   bool get isSignedIn;
   Stream<bool> watchSignedIn();
   Future<void> signInWithGoogle();
-  Future<void> sendEmailOtp(String email);
-  Future<void> verifyEmailOtp({required String email, required String code});
+
+  /// Throws [AuthFailure] on a known failure (e.g. wrong password).
+  Future<void> signInWithPassword({
+    required String email,
+    required String password,
+  });
+
+  /// Returns `true` if the user is signed in straight away, `false` if the
+  /// project requires email confirmation first. Throws [AuthFailure].
+  Future<bool> signUpWithPassword({
+    required String email,
+    required String password,
+  });
+
   Future<void> signOut();
   Future<String?> accessToken();
+}
+
+enum AuthFailureKind { invalidCredentials, emailTaken, weakPassword, other }
+
+/// Provider-neutral auth error, so screens never depend on Supabase types.
+class AuthFailure implements Exception {
+  const AuthFailure(this.kind);
+
+  /// Maps a Supabase Auth error code (only the code is kept, never the message).
+  factory AuthFailure.fromCode(String? code) => AuthFailure(switch (code) {
+    'invalid_credentials' => AuthFailureKind.invalidCredentials,
+    'user_already_exists' || 'email_exists' => AuthFailureKind.emailTaken,
+    'weak_password' => AuthFailureKind.weakPassword,
+    _ => AuthFailureKind.other,
+  });
+
+  final AuthFailureKind kind;
+
+  @override
+  String toString() => 'AuthFailure(${kind.name})';
 }
 
 class SupabaseAuthRepository implements AuthRepository {
@@ -35,19 +67,34 @@ class SupabaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> sendEmailOtp(String email) =>
-      _client.auth.signInWithOtp(email: email.trim(), shouldCreateUser: true);
+  Future<void> signInWithPassword({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      await _client.auth.signInWithPassword(
+        email: email.trim(),
+        password: password,
+      );
+    } on AuthException catch (e) {
+      throw AuthFailure.fromCode(e.code);
+    }
+  }
 
   @override
-  Future<void> verifyEmailOtp({
+  Future<bool> signUpWithPassword({
     required String email,
-    required String code,
+    required String password,
   }) async {
-    await _client.auth.verifyOTP(
-      email: email.trim(),
-      token: code.trim(),
-      type: OtpType.email,
-    );
+    try {
+      final res = await _client.auth.signUp(
+        email: email.trim(),
+        password: password,
+      );
+      return res.session != null;
+    } on AuthException catch (e) {
+      throw AuthFailure.fromCode(e.code);
+    }
   }
 
   @override

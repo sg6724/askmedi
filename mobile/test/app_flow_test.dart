@@ -27,7 +27,7 @@ class FakeAuthRepository implements AuthRepository {
 
   bool _signedIn;
   final _changes = StreamController<bool>.broadcast();
-  String? codeSentTo;
+  String? signedInAs;
 
   void setSignedIn(bool value) {
     _signedIn = value;
@@ -44,16 +44,26 @@ class FakeAuthRepository implements AuthRepository {
   Future<void> signOut() async => setSignedIn(false);
 
   @override
-  Future<void> sendEmailOtp(String email) async => codeSentTo = email;
+  Future<void> signInWithPassword({
+    required String email,
+    required String password,
+  }) async {
+    signedInAs = email;
+    setSignedIn(true);
+  }
+
+  @override
+  Future<bool> signUpWithPassword({
+    required String email,
+    required String password,
+  }) async {
+    signedInAs = email;
+    setSignedIn(true);
+    return true;
+  }
 
   @override
   Future<void> signInWithGoogle() async {}
-
-  @override
-  Future<void> verifyEmailOtp({
-    required String email,
-    required String code,
-  }) async {}
 
   @override
   Future<String?> accessToken() async => null;
@@ -112,8 +122,10 @@ class FakeProfileRepository implements ProfileRepository {
 // -- Harness ---------------------------------------------------------------
 
 const _none = OnboardingStatus(consentsGiven: false, profileComplete: false);
-const _consentsOnly =
-    OnboardingStatus(consentsGiven: true, profileComplete: false);
+const _consentsOnly = OnboardingStatus(
+  consentsGiven: true,
+  profileComplete: false,
+);
 const _done = OnboardingStatus(consentsGiven: true, profileComplete: true);
 
 class World {
@@ -123,8 +135,8 @@ class World {
     Object? fetchError,
     this.displayName,
     this.meError,
-  })  : auth = FakeAuthRepository(signedIn: signedIn),
-        onboarding = FakeOnboardingRepository(status, error: fetchError) {
+  }) : auth = FakeAuthRepository(signedIn: signedIn),
+       onboarding = FakeOnboardingRepository(status, error: fetchError) {
     consent = FakeConsentRepository(onboarding);
     profile = FakeProfileRepository(onboarding);
   }
@@ -161,24 +173,26 @@ Future<void> pumpApp(
   _tallViewport(tester);
   SharedPreferences.setMockInitialValues(prefs);
   final sharedPrefs = await SharedPreferences.getInstance();
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      sharedPreferencesProvider.overrideWithValue(sharedPrefs),
-      authRepositoryProvider.overrideWithValue(world.auth),
-      onboardingRepositoryProvider.overrideWithValue(world.onboarding),
-      consentRepositoryProvider.overrideWithValue(world.consent),
-      profileRepositoryProvider.overrideWithValue(world.profile),
-      // Overrides keep the real providers' autoDispose/retry behaviour, so
-      // these exercise the production provider configuration.
-      meProvider.overrideWith((ref) async {
-        world.meCalls++;
-        if (world.meError != null) throw world.meError!;
-        return const MeResponse(userId: 'u-1');
-      }),
-      displayNameProvider.overrideWith((ref) async => world.displayName),
-    ],
-    child: const AskMediApp(),
-  ));
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(sharedPrefs),
+        authRepositoryProvider.overrideWithValue(world.auth),
+        onboardingRepositoryProvider.overrideWithValue(world.onboarding),
+        consentRepositoryProvider.overrideWithValue(world.consent),
+        profileRepositoryProvider.overrideWithValue(world.profile),
+        // Overrides keep the real providers' autoDispose/retry behaviour, so
+        // these exercise the production provider configuration.
+        meProvider.overrideWith((ref) async {
+          world.meCalls++;
+          if (world.meError != null) throw world.meError!;
+          return const MeResponse(userId: 'u-1');
+        }),
+        displayNameProvider.overrideWith((ref) async => world.displayName),
+      ],
+      child: const AskMediApp(),
+    ),
+  );
   if (settle) await tester.pumpAndSettle();
 }
 
@@ -186,9 +200,9 @@ Finder inNavBar(String label) =>
     find.descendant(of: find.byType(NavigationBar), matching: find.text(label));
 
 /// The app's real router, read out of the widget tree's provider container.
-GoRouter routerOf(WidgetTester tester) => ProviderScope.containerOf(
-      tester.element(find.byType(AskMediApp)),
-    ).read(routerProvider);
+GoRouter routerOf(WidgetTester tester) =>
+    ProviderScope.containerOf(tester.element(find.byType(AskMediApp)))
+        .read(routerProvider);
 
 /// Full location of the top page, including pushed routes (the router's
 /// routeInformationProvider only reports the last go()).
@@ -212,43 +226,52 @@ void main() {
     expect(find.text('Choose your language'), findsNothing);
   });
 
-  testWidgets('email code: address goes to the OTP screen via extra, not the '
-      'URL', (tester) async {
-    final world = World();
+  testWidgets('email + password sign-in moves on to consent', (tester) async {
+    final world = World(status: _none);
     await pumpApp(tester, world);
     expect(find.text('Sign in to AskMedi'), findsOneWidget);
 
     await tester.enterText(
-        find.widgetWithText(TextField, 'Email address'), 'a@test.dev');
-    await tester.tap(find.widgetWithText(FilledButton, 'Send code'));
+      find.widgetWithText(TextField, 'Email address'),
+      'a@test.dev',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Password'),
+      'correct-horse',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
 
-    expect(world.auth.codeSentTo, 'a@test.dev');
-    expect(find.text('Enter the code'), findsOneWidget);
-    expect(find.text('We sent a 6-digit code to a@test.dev'), findsOneWidget);
-    expect(locationOf(tester), Routes.otp);
+    expect(world.auth.signedInAs, 'a@test.dev');
+    expect(find.text('Before we begin'), findsOneWidget);
   });
 
   testWidgets('signed in, no consents -> consent screen', (tester) async {
     await pumpApp(tester, World(signedIn: true, status: _none));
 
     expect(find.text('Before we begin'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Agree and continue'),
-        findsOneWidget);
+    expect(
+      find.widgetWithText(FilledButton, 'Agree and continue'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('signed in, consents ok, no profile -> profile setup',
-      (tester) async {
+  testWidgets('signed in, consents ok, no profile -> profile setup', (
+    tester,
+  ) async {
     await pumpApp(tester, World(signedIn: true, status: _consentsOnly));
 
     expect(find.text('Your health profile'), findsOneWidget);
     expect(find.widgetWithText(TextField, 'Birth year'), findsOneWidget);
   });
 
-  testWidgets('fully onboarded -> home with four tabs and server status',
-      (tester) async {
+  testWidgets('fully onboarded -> home with four tabs and server status', (
+    tester,
+  ) async {
     await pumpApp(
-        tester, World(signedIn: true, status: _done, displayName: 'Asha'));
+      tester,
+      World(signedIn: true, status: _done, displayName: 'Asha'),
+    );
 
     for (final label in ['Home', 'History', 'Hospitals', 'Profile']) {
       expect(inNavBar(label), findsOneWidget, reason: 'tab $label');
@@ -257,45 +280,57 @@ void main() {
     expect(find.text('Hello, Asha!'), findsOneWidget);
   });
 
-  testWidgets('home greets without a name when the profile has none',
-      (tester) async {
+  testWidgets('home greets without a name when the profile has none', (
+    tester,
+  ) async {
     await pumpApp(tester, World(signedIn: true, status: _done));
 
     expect(find.text('Hello!'), findsOneWidget);
   });
 
   testWidgets('tab placeholders use localised titles (Hindi)', (tester) async {
-    await pumpApp(tester, World(signedIn: true, status: _done),
-        prefs: const {'app_locale': 'hi'});
+    await pumpApp(
+      tester,
+      World(signedIn: true, status: _done),
+      prefs: const {'app_locale': 'hi'},
+    );
     final hi = lookupAppLocalizations(const Locale('hi'));
 
     await tester.tap(inNavBar(hi.tabHistory));
     await tester.pumpAndSettle();
     expect(find.text(hi.comingSoon), findsOneWidget);
     expect(
-        find.descendant(
-            of: find.byType(AppBar), matching: find.text(hi.tabHistory)),
-        findsOneWidget);
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text(hi.tabHistory),
+      ),
+      findsOneWidget,
+    );
 
     await tester.tap(inNavBar(hi.tabHospitals));
     await tester.pumpAndSettle();
     expect(
-        find.descendant(
-            of: find.byType(AppBar), matching: find.text(hi.tabHospitals)),
-        findsOneWidget);
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text(hi.tabHospitals),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('History'), findsNothing);
     expect(find.text('Hospitals'), findsNothing);
   });
 
-  testWidgets('onboarding advances: consent -> profile -> home',
-      (tester) async {
+  testWidgets('onboarding advances: consent -> profile -> home', (
+    tester,
+  ) async {
     final world = World(signedIn: true, status: _none, displayName: 'Asha');
     await pumpApp(tester, world);
     expect(find.text('Before we begin'), findsOneWidget);
 
     await tester.tap(find.text('I am 18 years or older'));
-    await tester.tap(find.text(
-        'I understand AskMedi is not a doctor and I accept the terms'));
+    await tester.tap(
+      find.text('I understand AskMedi is not a doctor and I accept the terms'),
+    );
     await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, 'Agree and continue'));
     await tester.pumpAndSettle();
@@ -303,7 +338,10 @@ void main() {
     expect(world.consent.saved?[ConsentPurpose.age18Plus], isTrue);
     expect(find.text('Your health profile'), findsOneWidget);
 
-    await tester.enterText(find.widgetWithText(TextField, 'Birth year'), '1995');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Birth year'),
+      '1995',
+    );
     await tester.tap(find.widgetWithText(FilledButton, 'Save and continue'));
     await tester.pumpAndSettle();
 
@@ -313,8 +351,9 @@ void main() {
     expect(find.text('Hello, Asha!'), findsOneWidget);
   });
 
-  testWidgets('sign out from the Profile tab returns to sign in',
-      (tester) async {
+  testWidgets('sign out from the Profile tab returns to sign in', (
+    tester,
+  ) async {
     await pumpApp(tester, World(signedIn: true, status: _done));
 
     await tester.tap(inNavBar('Profile'));
@@ -341,11 +380,16 @@ void main() {
   testWidgets('onboarding fetch fails -> splash error with Retry; Retry '
       'recovers', (tester) async {
     final world = World(
-        signedIn: true, status: _done, fetchError: Exception('network down'));
+      signedIn: true,
+      status: _done,
+      fetchError: Exception('network down'),
+    );
     await pumpApp(tester, world);
 
-    expect(find.text('Something went wrong. Please try again.'),
-        findsOneWidget);
+    expect(
+      find.text('Something went wrong. Please try again.'),
+      findsOneWidget,
+    );
     expect(find.widgetWithText(FilledButton, 'Retry'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
 
@@ -368,15 +412,18 @@ void main() {
     // The save itself succeeds, but the refetch that follows it fails.
     world.onboarding.error = Exception('network down');
     await tester.tap(find.text('I am 18 years or older'));
-    await tester.tap(find.text(
-        'I understand AskMedi is not a doctor and I accept the terms'));
+    await tester.tap(
+      find.text('I understand AskMedi is not a doctor and I accept the terms'),
+    );
     await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, 'Agree and continue'));
     await tester.pumpAndSettle();
 
     expect(world.consent.saved?[ConsentPurpose.age18Plus], isTrue);
-    expect(find.text('Something went wrong. Please try again.'),
-        findsOneWidget);
+    expect(
+      find.text('Something went wrong. Please try again.'),
+      findsOneWidget,
+    );
     expect(find.widgetWithText(FilledButton, 'Retry'), findsOneWidget);
     expect(find.text('Before we begin'), findsNothing);
 
@@ -414,8 +461,9 @@ void main() {
     expect(world.onboarding.fetches, 1);
   });
 
-  testWidgets('account switch: Home never shows the previous account data',
-      (tester) async {
+  testWidgets('account switch: Home never shows the previous account data', (
+    tester,
+  ) async {
     final world = World(signedIn: true, status: _done, displayName: 'Asha');
     await pumpApp(tester, world);
     expect(find.text('Hello, Asha!'), findsOneWidget);
@@ -442,7 +490,10 @@ void main() {
   testWidgets('server unreachable: Home shows the error tile and Retry '
       'promptly (no long retry backoff)', (tester) async {
     final world = World(
-        signedIn: true, status: _done, meError: Exception('offline'));
+      signedIn: true,
+      status: _done,
+      meError: Exception('offline'),
+    );
     await pumpApp(tester, world, settle: false);
 
     // Bounded: 1.5 s of fake time. Riverpod 3's default retry would still be

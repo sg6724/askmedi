@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/auth_repository.dart';
-import '../../features/auth/otp_screen.dart';
 import '../../features/auth/sign_in_screen.dart';
 import '../../features/consent/consent_screen.dart';
 import '../../features/home/home_screen.dart';
@@ -54,20 +53,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // meanwhile (redirectFor then moves the user on).
       GoRoute(
           path: Routes.loginCallback, builder: (_, _) => const SplashScreen()),
-      GoRoute(
-        path: Routes.signIn,
-        builder: (context, _) => SignInScreen(
-          // The email travels in `extra`, not in the URL (no PII in the URI).
-          onCodeSent: (email) => context.push(Routes.otp, extra: email),
-        ),
-        routes: [
-          GoRoute(
-            path: 'otp',
-            builder: (_, state) =>
-                OtpScreen(email: state.extra as String? ?? ''),
-          ),
-        ],
-      ),
+      GoRoute(path: Routes.signIn, builder: (_, _) => const SignInScreen()),
       GoRoute(
         path: Routes.consent,
         builder: (_, _) => ConsentScreen(

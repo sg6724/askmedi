@@ -23,10 +23,9 @@ void main() {
     expect(redirectFor(status(lang: false), Routes.language), isNull);
   });
 
-  test('signed out -> sign in, but OTP sub-route is allowed', () {
+  test('signed out -> sign in', () {
     expect(redirectFor(status(signedIn: false), Routes.home), Routes.signIn);
     expect(redirectFor(status(signedIn: false), Routes.signIn), isNull);
-    expect(redirectFor(status(signedIn: false), Routes.otp), isNull);
   });
 
   test('signed in but onboarding not loaded -> splash', () {

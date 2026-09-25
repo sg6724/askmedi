@@ -2,7 +2,6 @@ abstract final class Routes {
   static const splash = '/';
   static const language = '/language';
   static const signIn = '/sign-in';
-  static const otp = '/sign-in/otp';
   static const consent = '/consent';
   static const profileSetup = '/profile-setup';
 
@@ -19,7 +18,6 @@ abstract final class Routes {
     splash,
     language,
     signIn,
-    otp,
     consent,
     profileSetup,
     loginCallback,

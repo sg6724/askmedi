@@ -10,10 +10,9 @@ void main() {
     expect(isValidEmail(''), isFalse);
   });
 
-  test('otp validation', () {
-    expect(isValidOtp('123456'), isTrue);
-    expect(isValidOtp(' 123456 '), isTrue);
-    expect(isValidOtp('12345'), isFalse);
-    expect(isValidOtp('12a456'), isFalse);
+  test('password validation', () {
+    expect(isValidPassword('12345678'), isTrue);
+    expect(isValidPassword('1234567'), isFalse);
+    expect(isValidPassword(''), isFalse);
   });
 }
