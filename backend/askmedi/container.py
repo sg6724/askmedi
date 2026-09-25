@@ -31,6 +31,7 @@ def build_container(settings: Settings) -> Container:
     from askmedi.adapters.database import Database
     from askmedi.adapters.elevenlabs import ElevenLabsVoice
     from askmedi.adapters.gemini import GeminiClient
+    from askmedi.adapters.geo_cache import CachedGeocoder, CachedPlaces
     from askmedi.adapters.groq_search import GroqWebSearch
     from askmedi.adapters.litellm_provider import LiteLLMProvider
     from askmedi.adapters.litellm_vision import LiteLLMVisionReader
@@ -131,6 +132,8 @@ def build_container(settings: Settings) -> Container:
             repo=PostgresReportRepository(db),
             audit=audit,
         ),
-        hospitals=HospitalService(geocoder=osm, places=osm, audit=audit),
+        hospitals=HospitalService(
+            geocoder=CachedGeocoder(osm), places=CachedPlaces(osm), audit=audit
+        ),
         voice=VoiceService(stt=speech, tts=speech, audit=audit),
     )

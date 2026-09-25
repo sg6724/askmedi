@@ -64,3 +64,25 @@ async def test_chain_returns_unsourced_text_or_raises():
     assert out.text == "no sources"
     with pytest.raises(SearchUnavailable):
         await WebSearchChain([FakeSearch(fail=True)]).research("q")
+
+
+async def test_chain_caches_sourced_results():
+    first = FakeSearch(text="notes")
+    clock = [0.0]
+    chain = WebSearchChain([first], cache_ttl_s=60, clock=lambda: clock[0])
+
+    a = await chain.research("What is ZADY 500?", ["zady"])
+    b = await chain.research("  what is zady 500? ", ["zady"])  # same question, other spacing
+    assert a == b and len(first.questions) == 1
+
+    clock[0] = 61  # expired
+    await chain.research("What is ZADY 500?")
+    assert len(first.questions) == 2
+
+
+async def test_chain_does_not_cache_unsourced_results():
+    first = FakeSearch(text="notes", sources=[])
+    chain = WebSearchChain([first], cache_ttl_s=60)
+    await chain.research("q")
+    await chain.research("q")
+    assert len(first.questions) == 2
