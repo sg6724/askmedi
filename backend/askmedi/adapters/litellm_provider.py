@@ -20,7 +20,7 @@ class LiteLLMProvider:
         self,
         task_models: Mapping[str, Sequence[str]],
         completion_fn: CompletionFn | None = None,
-        timeout_s: float = 30.0,
+        timeout_s: float = 20.0,
     ) -> None:
         self._task_models = {task: list(models) for task, models in task_models.items()}
         self._completion = completion_fn or self._default_completion
@@ -46,6 +46,10 @@ class LiteLLMProvider:
                 "model": model,
                 "messages": wire_messages,
                 "timeout": self._timeout_s,
+                # No hidden retries: on a 429 the SDK would otherwise wait for the provider's
+                # retry-after (often 30-40 s on free tiers). The next model is tried instead.
+                "num_retries": 0,
+                "max_retries": 0,
             }
             if json_mode:
                 kwargs["response_format"] = {"type": "json_object"}

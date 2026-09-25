@@ -69,7 +69,7 @@ class GeminiClient:
         *,
         search_models: Sequence[str],
         vision_models: Sequence[str],
-        timeout_s: float = 45.0,
+        timeout_s: float = 25.0,
         transport: httpx.AsyncBaseTransport | None = None,
         resolve_redirects: bool = True,
     ) -> None:
@@ -164,7 +164,7 @@ class GeminiClient:
             "generationConfig": {"responseMimeType": "application/json", "temperature": 0},
         }
         errors: list[str] = []
-        async with self._client(timeout=60.0) as client:
+        async with self._client(timeout=25.0) as client:
             for model in self._vision_models:
                 try:
                     body = await self._generate(client, model, payload)

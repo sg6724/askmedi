@@ -178,3 +178,14 @@ async def test_logging_does_not_expose_secrets(caplog):
     assert "SECRET123" not in caplog.text
     assert "boom" not in caplog.text
     assert "https://" not in caplog.text
+
+
+async def test_rate_limits_fail_over_immediately_without_hidden_retries():
+    fn = ScriptedCompletion(failing={"groq/a"})
+    provider = LiteLLMProvider({"reason": ["groq/a", "gemini/b"]}, completion_fn=fn)
+    await provider.complete("reason", [ChatMessage(role="user", content="hi")])
+    # A 429 must move to the next model now, not wait for the provider's retry-after.
+    for call in fn.calls:
+        assert call["num_retries"] == 0
+        assert call["max_retries"] == 0
+        assert call["timeout"] <= 20
