@@ -36,6 +36,24 @@ Tests: backend 264 unit (+ integration); mobile 97 widget/unit; pgTAP RLS tests 
 3. When Gemini's vision quota was used up, scans and image reports failed. Groq vision now reads
    images as the fallback.
 
+## Phone-test fixes (2026-09-26)
+
+| Report | Cause | Fix |
+|---|---|---|
+| No intro to the app | — | Welcome slides after the language choice |
+| "Server connected" on Home | Debug line | Removed |
+| Slow voice | `eleven_v3` TTS (4.6 s) + long replies | `eleven_turbo_v2_5` for en/hi (~0.5 s), `scribe_v2`, 64 kbps audio, short spoken text: speak + transcribe now ~1 s each |
+| Talk looks like chat | Same screen | Voice-first Talk screen (orb, Listening/Thinking/Speaking) |
+| "File too large" on reports | Full camera photos > Vercel's 4.5 MB request limit | Photos resized on the phone (1600 px JPEG); PDF > 4 MB stopped with a message |
+| "Zady 500" not identified | Indian brand unknown to openFDA; Gemini grounding out of quota | Groq browser search first (found azithromycin 500 mg with DailyMed/Practo sources); the ingredient's label is looked up |
+| Latency everywhere | Free-tier limits: Groq 8k tokens/min and **200k tokens/day** per model, Gemini 20 requests/day per model; SDK retries waited ~40 s on each 429 | No hidden retries, per-model cooldown after 429, shorter timeouts, caches for searches and map lookups |
+
+**Most important for the demo:** on the free tiers a single day of testing used up Groq's 200k-token
+daily budget for `gpt-oss-120b` and Gemini's daily quota, after which answers fall back to smaller
+models and MedlinePlus (and medicine lookups lose their web sources). Groq's Dev Tier (pay-as-you-go,
+~$0.15 per million input tokens for gpt-oss-120b) or Gemini billing removes this. Otherwise avoid heavy
+testing before the demo (Gemini resets at 12:30 PM IST; Groq's daily window is rolling).
+
 ## Known limits and risks
 
 - **Gemini free tier: 20 requests/day per model.** Chat runs on Groq; grounded search falls back to
