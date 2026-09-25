@@ -12,6 +12,7 @@ from collections.abc import Sequence
 
 import httpx
 
+from askmedi.adapters.cooldown import Cooldowns, http_rate_limited
 from askmedi.domain.common import Source
 from askmedi.domain.search import GroundedText, SearchUnavailable
 
@@ -35,20 +36,21 @@ class GroqWebSearch:
         api_key: str,
         *,
         models: Sequence[str],
-        timeout_s: float = 40.0,
+        timeout_s: float = 25.0,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self._headers = {"Authorization": f"Bearer {api_key}"}
         self._models = [_bare_model(m) for m in models]
         self._timeout_s = timeout_s
         self._transport = transport
+        self._cooldowns = Cooldowns()
 
     async def research(self, question: str, keywords: Sequence[str] = ()) -> GroundedText:
         errors: list[str] = []
         async with httpx.AsyncClient(
             timeout=self._timeout_s, headers=self._headers, transport=self._transport
         ) as client:
-            for model in self._models:
+            for model in self._cooldowns.usable(self._models):
                 started = time.perf_counter()
                 try:
                     resp = await client.post(
@@ -64,6 +66,8 @@ class GroqWebSearch:
                     resp.raise_for_status()
                     message = resp.json()["choices"][0]["message"]
                 except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError) as exc:
+                    if http_rate_limited(exc):
+                        self._cooldowns.hit(model, exc.response.text[:500])
                     errors.append(f"{model}: {type(exc).__name__}")
                     logger.warning("groq search failed on %s: %s", model, type(exc).__name__)
                     continue

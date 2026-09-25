@@ -13,6 +13,7 @@ from typing import Any
 
 import httpx
 
+from askmedi.adapters.cooldown import Cooldowns, http_rate_limited
 from askmedi.domain.common import Source
 from askmedi.domain.llm import BadModelOutput, parse_json_object
 from askmedi.domain.search import (
@@ -79,6 +80,7 @@ class GeminiClient:
         self._timeout_s = timeout_s
         self._transport = transport
         self._resolve_redirects = resolve_redirects
+        self._cooldowns = Cooldowns()
 
     def _client(self, timeout: float | None = None) -> httpx.AsyncClient:
         return httpx.AsyncClient(timeout=timeout or self._timeout_s, transport=self._transport)
@@ -103,11 +105,13 @@ class GeminiClient:
         }
         errors: list[str] = []
         async with self._client() as client:
-            for model in self._search_models:
+            for model in self._cooldowns.usable(self._search_models):
                 started = time.perf_counter()
                 try:
                     body = await self._generate(client, model, payload)
                 except (httpx.HTTPError, ValueError) as exc:
+                    if http_rate_limited(exc):
+                        self._cooldowns.hit(model, exc.response.text[:500])
                     errors.append(f"{model}: {type(exc).__name__}")
                     logger.warning("grounded search failed on %s: %s", model, type(exc).__name__)
                     continue
@@ -165,10 +169,12 @@ class GeminiClient:
         }
         errors: list[str] = []
         async with self._client(timeout=25.0) as client:
-            for model in self._vision_models:
+            for model in self._cooldowns.usable(self._vision_models):
                 try:
                     body = await self._generate(client, model, payload)
                 except (httpx.HTTPError, ValueError) as exc:
+                    if http_rate_limited(exc):
+                        self._cooldowns.hit(model, exc.response.text[:500])
                     errors.append(f"{model}: {type(exc).__name__}")
                     logger.warning("vision failed on %s: %s", model, type(exc).__name__)
                     continue

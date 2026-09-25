@@ -189,3 +189,38 @@ async def test_rate_limits_fail_over_immediately_without_hidden_retries():
         assert call["num_retries"] == 0
         assert call["max_retries"] == 0
         assert call["timeout"] <= 20
+
+
+async def test_rate_limited_model_is_skipped_for_a_while():
+    class RateLimited(Exception):
+        status_code = 429
+
+    calls = []
+
+    async def fn(**kwargs):
+        calls.append(kwargs["model"])
+        if kwargs["model"] == "groq/a":
+            raise RateLimited("429 tokens per day exhausted")
+        return response("ok")
+
+    clock = [0.0]
+    provider = LiteLLMProvider(
+        {"reason": ["groq/a", "gemini/b"]}, completion_fn=fn, clock=lambda: clock[0]
+    )
+    msg = [ChatMessage(role="user", content="hi")]
+    await provider.complete("reason", msg)
+    await provider.complete("reason", msg)
+    assert calls == ["groq/a", "gemini/b", "gemini/b"]  # a is cooling down
+
+    clock[0] = 10_000  # cooldown over
+    await provider.complete("reason", msg)
+    assert calls[-2:] == ["groq/a", "gemini/b"]
+
+
+async def test_other_errors_do_not_cool_a_model_down():
+    fn = ScriptedCompletion(failing={"groq/a"})  # a plain error, not a rate limit
+    provider = LiteLLMProvider({"reason": ["groq/a", "gemini/b"]}, completion_fn=fn)
+    msg = [ChatMessage(role="user", content="hi")]
+    await provider.complete("reason", msg)
+    await provider.complete("reason", msg)
+    assert [c["model"] for c in fn.calls] == ["groq/a", "gemini/b", "groq/a", "gemini/b"]

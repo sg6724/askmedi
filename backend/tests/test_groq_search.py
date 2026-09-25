@@ -99,3 +99,19 @@ async def test_empty_answer_counts_as_failure():
     )
     with pytest.raises(SearchUnavailable):
         await search.research("q")
+
+
+async def test_daily_quota_429_skips_the_model_on_later_searches():
+    calls = []
+
+    def handler(request):
+        model = json.loads(request.content)["model"]
+        calls.append(model)
+        if model == "a":
+            return httpx.Response(429, json={"error": {"message": "tokens per day (TPD)"}})
+        return httpx.Response(200, json=_response("ok", [{"title": "t", "url": "https://a.b"}]))
+
+    search = GroqWebSearch("k", models=["a", "b"], transport=httpx.MockTransport(handler))
+    await search.research("q1")
+    await search.research("q2")
+    assert calls == ["a", "b", "b"]
