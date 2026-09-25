@@ -54,6 +54,27 @@ FIRES = [
     ("जुलाब झाले आणि लघवी होत नाही", "mr", "severe_dehydration"),
 ]
 
+# Extra words between the body part and the symptom must not hide a red flag.
+FIRES_WITH_WORDS_BETWEEN = [
+    ("mujhe seene mein bahut dard ho raha hai", "hi", "chest_pain"),
+    ("mere seene me subah se tez dard hai", "hi", "chest_pain"),
+    ("मेरे सीने में बहुत तेज़ दर्द है", "hi", "chest_pain"),
+    ("माझ्या छातीत खूप दुखत आहे", "mr", "chest_pain"),
+    ("there is a heavy pain in the middle of my chest", "en", "chest_pain"),
+    ("my chest feels very tight", "en", "chest_pain"),
+    ("saans lene mein bahut dikkat ho rahi hai", "hi", "breathing_difficulty"),
+    ("मुझे सांस लेने में बहुत तकलीफ हो रही है", "hi", "breathing_difficulty"),
+    ("मला श्वास घ्यायला खूप त्रास होत आहे", "mr", "breathing_difficulty"),
+]
+
+
+@pytest.mark.parametrize(("text", "language", "rule_id"), FIRES_WITH_WORDS_BETWEEN)
+def test_rule_fires_with_words_between(engine, text, language, rule_id):
+    match = engine.check(text, language)
+    assert match is not None, text
+    assert match.rule_id == rule_id
+
+
 DOES_NOT_FIRE = [
     ("mujhe kal se fever hai", "hi"),
     ("I have a mild headache and a runny nose", "en"),
@@ -63,6 +84,8 @@ DOES_NOT_FIRE = [
     ("my neck is stiff from sleeping badly", "en"),  # stiff neck alone, no fever
     ("I am pregnant and want to know about diet", "en"),  # pregnancy alone
     ("Vishal has a cold", "en"),  # 'vish' must match whole words only
+    ("I have a chest cold and a cough", "en"),  # chest without pain words
+    ("my back pain is worse today", "en"),  # pain without chest
 ]
 
 

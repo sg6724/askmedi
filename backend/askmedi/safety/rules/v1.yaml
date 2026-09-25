@@ -31,6 +31,12 @@ rules:
       mr: [छातीत दुखत, छातीत दुखणे, छातीत वेदना, छातीत दाब, छातीत कळ, हृदयविकाराचा झटका, हार्ट अटॅक]
       romanised: [seene mein dard, seene me dard, sine me dard, sine mein dard, seene main dard, chhati mein dard, chhati me dard, chati me dard, chati mein dard, chest mein dard, chest me dard, chest main dard, seene mein dabav, seene me jakdan, dil ka daura, heart attack, chhatit dukhat, chatit dukhat, chhatit dukhte, chhatit vedna, chhatit dab]
 
+    # Body part + symptom anywhere in the message, so extra words ("seene mein bahut dard")
+    # cannot hide the red flag. Deliberately broad: a false alarm is safer than a miss.
+    combos:
+      - - [chest, seene, seena, sine, sina, chhati, chati, chhatit, chatit, सीने, सीना, सीन, छाती, छातीत, छातीमध्ये]
+        - [pain, painful, hurts, hurting, pressure, tight, tightness, heavy, squeezing, crushing, dard, dukh*, vedna, dabav, dab, jakdan, kal, दर्द, दुख*, वेदना, दबाव, दाब, जकड़न, कळ]
+
   - id: stroke_signs
     action: emergency_108
     source:
@@ -60,6 +66,10 @@ rules:
       hi: [साँस नहीं, सांस नहीं, साँस लेने में तकलीफ, सांस लेने में तकलीफ, साँस लेने में दिक्कत, सांस लेने में दिक्कत, साँस फूल, सांस फूल, दम घुट, होंठ नीले]
       mr: [श्वास घेता येत नाही, श्वास घेण्यास त्रास, श्वास घ्यायला त्रास, दम लागत, धाप लागत, श्वास कोंडला, ओठ निळे]
       romanised: [saans nahi, sans nahi, saas nahi, saans lene mein takleef, saans lene me takleef, saans lene me taklif, sans lene me taklif, saans lene mein dikkat, saans lene me dikkat, sans lene me dikkat, saans phool, sans phool, saans ful, dum ghut, dam ghut, shwas gheta yet nahi, shwas ghenyas tras, dam lagat, dhap lagat, swas ghyayla tras]
+
+    combos:
+      - - [breathe, breathing, breath, saans, sans, saas, sas, swas, shwas, सांस, श्वास]
+        - [difficulty, difficult, trouble, hard, struggling, cannot, cant, unable, dikkat, takleef, taklif, pareshani, tras, trass, nahi, nahin, phool*, phul*, दिक्कत, तकलीफ, परेशानी, त्रास, नहीं, फूल*]
 
   - id: severe_bleeding
     action: emergency_108
