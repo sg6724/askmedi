@@ -125,7 +125,10 @@ class FakeProfileRepository implements ProfileRepository {
   Future<HealthProfile?> loadProfile() async => saved;
 
   @override
-  Future<void> updateProfile(HealthProfile profile, {required String language}) async {
+  Future<void> updateProfile(
+    HealthProfile profile, {
+    required String language,
+  }) async {
     saved = profile;
     savedLanguage = language;
   }
@@ -310,8 +313,10 @@ void main() {
     for (final label in ['Home', 'History', 'Hospitals', 'Profile']) {
       expect(inNavBar(label), findsOneWidget, reason: 'tab $label');
     }
-    expect(find.text('Connected to AskMedi server'), findsOneWidget);
     expect(find.text('Hello, Asha!'), findsOneWidget);
+    // Internal server status is not shown to users.
+    expect(find.text('Connected to AskMedi server'), findsNothing);
+    expect(find.text("Can't reach the server"), findsNothing);
   });
 
   testWidgets('home greets without a name when the profile has none', (
@@ -487,7 +492,7 @@ void main() {
     expect(world.onboarding.fetches, 2);
     expect(find.text('Something went wrong. Please try again.'), findsNothing);
     expect(inNavBar('Home'), findsOneWidget);
-    expect(find.text('Connected to AskMedi server'), findsOneWidget);
+    expect(find.text('Check symptoms'), findsOneWidget);
   });
 
   testWidgets('failed refetch after saving consent -> splash error + Retry, '
@@ -554,7 +559,6 @@ void main() {
     final world = World(signedIn: true, status: _done, displayName: 'Asha');
     await pumpApp(tester, world);
     expect(find.text('Hello, Asha!'), findsOneWidget);
-    expect(world.meCalls, 1);
 
     await tester.tap(inNavBar('Profile'));
     await tester.pumpAndSettle();
@@ -570,33 +574,5 @@ void main() {
     expect(inNavBar('Home'), findsOneWidget);
     expect(find.text('Hello, Bela!'), findsOneWidget);
     expect(find.text('Hello, Asha!'), findsNothing);
-    // The server check is recomputed for the new session, not reused.
-    expect(world.meCalls, 2);
-  });
-
-  testWidgets('server unreachable: Home shows the error tile and Retry '
-      'promptly (no long retry backoff)', (tester) async {
-    final world = World(
-      signedIn: true,
-      status: _done,
-      meError: Exception('offline'),
-    );
-    await pumpApp(tester, world, settle: false);
-
-    // Bounded: 1.5 s of fake time. Riverpod 3's default retry would still be
-    // backing off (200 ms, 400 ms, 800 ms, ...) and show only a spinner.
-    for (var i = 0; i < 30; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-    }
-
-    expect(find.text("Can't reach the server"), findsOneWidget);
-    expect(find.widgetWithText(TextButton, 'Retry'), findsOneWidget);
-    expect(world.meCalls, 1);
-
-    world.meError = null;
-    await tester.tap(find.widgetWithText(TextButton, 'Retry'));
-    await tester.pumpAndSettle();
-    expect(find.text('Connected to AskMedi server'), findsOneWidget);
-    expect(world.meCalls, 2);
   });
 }

@@ -66,8 +66,6 @@
   "howCanIHelp": "How can I help you today?",
   "comingSoon": "Coming soon",
   "signOut": "Sign out",
-  "serverConnected": "Connected to AskMedi server",
-  "serverUnreachable": "Can't reach the server",
   "homeCheckSymptoms": "Check symptoms",
   "homeCheckSymptomsSub": "Tell us how you feel",
   "homeTalk": "Talk",

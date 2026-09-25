@@ -59,8 +59,6 @@
   "howCanIHelp": "आज मैं आपकी कैसे मदद कर सकता हूँ?",
   "comingSoon": "जल्द आ रहा है",
   "signOut": "साइन आउट",
-  "serverConnected": "AskMedi सर्वर से जुड़े हैं",
-  "serverUnreachable": "सर्वर से संपर्क नहीं हो पा रहा",
   "homeCheckSymptoms": "लक्षण जाँचें",
   "homeCheckSymptomsSub": "बताइए आप कैसा महसूस कर रहे हैं",
   "homeTalk": "बोलकर पूछें",
