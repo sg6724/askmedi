@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -62,7 +63,8 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<void> signInWithGoogle() async {
     await _client.auth.signInWithOAuth(
       OAuthProvider.google,
-      redirectTo: redirectUrl,
+      // On the web, come back to the page that started sign-in.
+      redirectTo: kIsWeb ? Uri.base.origin : redirectUrl,
     );
   }
 

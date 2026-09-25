@@ -1,0 +1,55 @@
+name: Android APK
+
+# Builds an installable release APK in the cloud (no local Android SDK needed).
+# Run it from the Actions tab ("Run workflow"), or push app changes to main.
+# Config comes from repository *variables* (Settings -> Secrets and variables ->
+# Actions -> Variables): SUPABASE_URL, SUPABASE_ANON_KEY, API_BASE_URL. The
+# Supabase publishable key is meant to ship inside the app, so a variable is fine.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["mobile/**", ".github/workflows/android-apk.yml"]
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.5
+          channel: stable
+          cache: true
+      - name: Write app config
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          for v in SUPABASE_URL SUPABASE_ANON_KEY API_BASE_URL; do
+            [ -n "${!v}" ] || { echo "::error::Repository variable $v is not set"; exit 1; }
+          done
+          jq -n --arg u "$SUPABASE_URL" --arg k "$SUPABASE_ANON_KEY" --arg a "$API_BASE_URL" \
+            '{SUPABASE_URL: $u, SUPABASE_ANON_KEY: $k, API_BASE_URL: $a}' > env/ci.json
+      - run: flutter pub get
+      # lib/core/l10n/gen/ is git-ignored, so generate it before building.
+      - run: flutter gen-l10n
+      - run: flutter build apk --release --dart-define-from-file=env/ci.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: askmedi-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
