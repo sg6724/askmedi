@@ -312,3 +312,24 @@ async def test_places_fall_back_to_nominatim_when_overpass_is_down():
     places = await osm.nearby_health_places(18.52, 73.86, 3000)
     assert [p.name for p in places] == ["A hospital", "A clinic"]
     assert places[0].emergency is True and places[0].address == "FC Road, Pune"
+
+
+async def test_elevenlabs_speak_picks_the_model_for_the_language():
+    models = []
+
+    def handler(request):
+        models.append(json.loads(request.content)["model_id"])
+        return httpx.Response(200, content=b"ID3mp3")
+
+    voice = ElevenLabsVoice(
+        "k",
+        stt_model="s",
+        tts_model="eleven_v3",
+        tts_models_by_language={"en": "eleven_turbo_v2_5", "hi": "eleven_turbo_v2_5"},
+        voice_id="v",
+        transport=httpx.MockTransport(handler),
+    )
+    for language in ("hi", "en", "mr"):
+        await voice.speak("text", language)
+    # Fast model where it supports the language; the default (Marathi-capable) otherwise.
+    assert models == ["eleven_turbo_v2_5", "eleven_turbo_v2_5", "eleven_v3"]

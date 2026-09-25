@@ -30,9 +30,13 @@ class ApiVoiceRepository implements VoiceRepository {
   Future<Uint8List> speak(String text, {required String language}) {
     // The endpoint accepts at most 1500 characters.
     final clipped = text.length > 1500 ? text.substring(0, 1500) : text;
-    return _api.postForBytes('/voice/speak', {'text': clipped, 'language': language});
+    return _api.postForBytes('/voice/speak', {
+      'text': clipped,
+      'language': language,
+    });
   }
 }
 
-final voiceRepositoryProvider =
-    Provider<VoiceRepository>((ref) => ApiVoiceRepository(ref.watch(apiClientProvider)));
+final voiceRepositoryProvider = Provider<VoiceRepository>(
+  (ref) => ApiVoiceRepository(ref.watch(apiClientProvider)),
+);

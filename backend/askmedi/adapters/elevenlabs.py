@@ -1,6 +1,7 @@
 """ElevenLabs speech-to-text (Scribe) and text-to-speech. Model and voice IDs come from config."""
 
 import logging
+from collections.abc import Mapping
 
 import httpx
 
@@ -29,6 +30,7 @@ class ElevenLabsVoice:
         stt_model: str,
         tts_model: str,
         voice_id: str,
+        tts_models_by_language: Mapping[str, str] | None = None,
         output_format: str = "mp3_44100_128",
         timeout_s: float = 60.0,
         transport: httpx.AsyncBaseTransport | None = None,
@@ -36,6 +38,9 @@ class ElevenLabsVoice:
         self._headers = {"xi-api-key": api_key}
         self._stt_model = stt_model
         self._tts_model = tts_model
+        # Per-language override: a low-latency model where it supports the language,
+        # the default model (e.g. eleven_v3, the only one with Marathi) elsewhere.
+        self._tts_models = dict(tts_models_by_language or {})
         self._voice_id = voice_id
         self._output_format = output_format
         self._timeout_s = timeout_s
@@ -72,7 +77,8 @@ class ElevenLabsVoice:
 
     async def speak(self, text: str, language: str) -> bytes:
         url = f"{API_BASE}/text-to-speech/{self._voice_id}"
-        body = {"text": text, "model_id": self._tts_model, "language_code": language}
+        model = self._tts_models.get(language, self._tts_model)
+        body = {"text": text, "model_id": model, "language_code": language}
         try:
             async with self._client() as client:
                 resp = await client.post(

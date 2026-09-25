@@ -298,7 +298,8 @@ void main() {
 
     expect(find.text('mujhe fever hai'), findsOneWidget);
     expect(chat.sent.single.message, 'mujhe fever hai');
-    expect(voice.spoken, ['How high is the fever?']);
+    // Voice mode reads the question and its options, not the whole reply.
+    expect(voice.spoken, ['How high is the fever? Below 100°F, Above 102°F.']);
     expect(output.plays, 1);
   });
 

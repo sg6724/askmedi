@@ -24,7 +24,8 @@ enum Likelihood {
   final String wire;
 
   static Likelihood fromWire(String? w) =>
-      Likelihood.values.where((l) => l.wire == w).firstOrNull ?? Likelihood.possible;
+      Likelihood.values.where((l) => l.wire == w).firstOrNull ??
+      Likelihood.possible;
 }
 
 class Followup {
@@ -34,7 +35,11 @@ class Followup {
 }
 
 class Cause {
-  const Cause({required this.name, required this.likelihood, required this.explanation});
+  const Cause({
+    required this.name,
+    required this.likelihood,
+    required this.explanation,
+  });
   final String name;
   final Likelihood likelihood;
   final String explanation;
@@ -89,7 +94,8 @@ class ChatReply {
     final e = j['emergency'] as Map?;
     return ChatReply(
       episodeId: j['episode_id'] as String,
-      type: ChatReplyType.values.where((t) => t.name == j['type']).firstOrNull ??
+      type:
+          ChatReplyType.values.where((t) => t.name == j['type']).firstOrNull ??
           ChatReplyType.followup,
       message: (j['message'] as String?) ?? '',
       readback: stringList(j['readback']),
@@ -122,7 +128,9 @@ class ChatReply {
               reason: (e['reason'] as String?) ?? '',
               call: stringList(e['call']),
               source: e['source'] is Map
-                  ? Source.fromJson(Map<String, dynamic>.from(e['source'] as Map))
+                  ? Source.fromJson(
+                      Map<String, dynamic>.from(e['source'] as Map),
+                    )
                   : null,
             ),
       sources: Source.listFrom(j['sources']),

@@ -27,11 +27,21 @@ class Settings(BaseSettings):
 
     # ElevenLabs voice. When the key is unset, /voice/* answer 503 voice_unavailable.
     elevenlabs_api_key: str | None = None
-    elevenlabs_stt_model: str = "scribe_v1"
+    # Measured 2026-09-25: scribe_v2 transcribes hi/mr as accurately as v1 and ~35% faster.
+    elevenlabs_stt_model: str = "scribe_v2"
     # eleven_v3 covers Hindi and Marathi (flash/multilingual v2 do not cover Marathi).
     elevenlabs_tts_model: str = "eleven_v3"
     elevenlabs_voice_id: str = "JBFqnCBsd6RMkjVDRZzb"
-    elevenlabs_output_format: str = "mp3_44100_128"
+    # Low-latency TTS per language (measured 2026-09-25: eleven_turbo_v2_5 0.3 s vs eleven_v3
+    # 4.6 s for the same Hindi sentence). eleven_v3 stays the default: it is the only model
+    # with Marathi. Override with ELEVENLABS_TTS_MODELS_BY_LANGUAGE='{"hi": "..."}'.
+    elevenlabs_tts_models_by_language: dict[str, str] = {
+        "en": "eleven_turbo_v2_5",
+        "hi": "eleven_turbo_v2_5",
+    }
+    # Speech needs no hi-fi audio: 64 kbps is ~4x smaller than 128 kbps, stays clear in STT
+    # round-trips, and reaches the phone faster on mobile data.
+    elevenlabs_output_format: str = "mp3_44100_64"
 
     # OpenStreetMap (Nominatim/Overpass) usage policy requires an identifying User-Agent.
     osm_user_agent: str = "AskMedi/0.1 (student project)"

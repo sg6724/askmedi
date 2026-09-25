@@ -6,6 +6,7 @@ import '../../onboarding/locale_controller.dart';
 import '../data/chat_repository.dart';
 import '../data/voice_repository.dart';
 import '../domain/chat_models.dart';
+import '../domain/spoken_text.dart';
 
 sealed class ChatEntry {
   const ChatEntry();
@@ -51,15 +52,14 @@ class ChatState {
     (Object, String)? Function()? error,
     VoiceStatus? voice,
     VoiceNotice? Function()? voiceNotice,
-  }) =>
-      ChatState(
-        episodeId: episodeId ?? this.episodeId,
-        entries: entries ?? this.entries,
-        busy: busy ?? this.busy,
-        error: error == null ? this.error : error(),
-        voice: voice ?? this.voice,
-        voiceNotice: voiceNotice == null ? this.voiceNotice : voiceNotice(),
-      );
+  }) => ChatState(
+    episodeId: episodeId ?? this.episodeId,
+    entries: entries ?? this.entries,
+    busy: busy ?? this.busy,
+    error: error == null ? this.error : error(),
+    voice: voice ?? this.voice,
+    voiceNotice: voiceNotice == null ? this.voiceNotice : voiceNotice(),
+  );
 }
 
 class ChatController extends Notifier<ChatState> {
@@ -96,7 +96,9 @@ class ChatController extends Notifier<ChatState> {
 
   Future<void> _request(String message, {required bool speakReply}) async {
     try {
-      final reply = await ref.read(chatRepositoryProvider).send(
+      final reply = await ref
+          .read(chatRepositoryProvider)
+          .send(
             episodeId: state.episodeId,
             message: message,
             language: ref.read(appLanguageProvider),
@@ -107,7 +109,8 @@ class ChatController extends Notifier<ChatState> {
         entries: [...state.entries, BotEntry(reply)],
         busy: false,
       );
-      if (speakReply && reply.message.isNotEmpty) await _speak(reply.message);
+      final spoken = spokenText(reply);
+      if (speakReply && spoken.isNotEmpty) await _speak(spoken);
     } catch (e) {
       if (!ref.mounted) return;
       state = state.copyWith(busy: false, error: () => (e, message));
@@ -146,7 +149,10 @@ class ChatController extends Notifier<ChatState> {
     try {
       final wav = await _recorder.stop();
       if (wav == null) {
-        state = state.copyWith(voice: VoiceStatus.idle, voiceNotice: () => VoiceNotice.notHeard);
+        state = state.copyWith(
+          voice: VoiceStatus.idle,
+          voiceNotice: () => VoiceNotice.notHeard,
+        );
         return;
       }
       final text = await ref.read(voiceRepositoryProvider).transcribe(wav);
@@ -161,11 +167,15 @@ class ChatController extends Notifier<ChatState> {
       if (!ref.mounted) return;
       state = state.copyWith(
         voice: VoiceStatus.idle,
-        voiceNotice: () => e.isBusy ? VoiceNotice.unavailable : VoiceNotice.notHeard,
+        voiceNotice: () =>
+            e.isBusy ? VoiceNotice.unavailable : VoiceNotice.notHeard,
       );
     } catch (_) {
       if (!ref.mounted) return;
-      state = state.copyWith(voice: VoiceStatus.idle, voiceNotice: () => VoiceNotice.notHeard);
+      state = state.copyWith(
+        voice: VoiceStatus.idle,
+        voiceNotice: () => VoiceNotice.notHeard,
+      );
     }
   }
 

@@ -7,25 +7,25 @@ import '../domain/chat_models.dart';
 import 'chat_screen.dart';
 
 Color urgencyColor(Urgency? u) => switch (u) {
-      Urgency.emergency => AppColors.danger,
-      Urgency.seeDoctorToday => const Color(0xFFE67E22),
-      Urgency.seeDoctorSoon => const Color(0xFFC99A06),
-      Urgency.selfCare => AppColors.teal,
-      null => AppColors.navy,
-    };
+  Urgency.emergency => AppColors.danger,
+  Urgency.seeDoctorToday => const Color(0xFFE67E22),
+  Urgency.seeDoctorSoon => const Color(0xFFC99A06),
+  Urgency.selfCare => AppColors.teal,
+  null => AppColors.navy,
+};
 
 String urgencyLabel(AppLocalizations l10n, Urgency? u) => switch (u) {
-      Urgency.emergency => l10n.urgencyEmergency,
-      Urgency.seeDoctorToday => l10n.urgencySeeDoctorToday,
-      Urgency.seeDoctorSoon => l10n.urgencySeeDoctorSoon,
-      Urgency.selfCare || null => l10n.urgencySelfCare,
-    };
+  Urgency.emergency => l10n.urgencyEmergency,
+  Urgency.seeDoctorToday => l10n.urgencySeeDoctorToday,
+  Urgency.seeDoctorSoon => l10n.urgencySeeDoctorSoon,
+  Urgency.selfCare || null => l10n.urgencySelfCare,
+};
 
 String likelihoodLabel(AppLocalizations l10n, Likelihood l) => switch (l) {
-      Likelihood.moreLikely => l10n.likelihoodMoreLikely,
-      Likelihood.possible => l10n.likelihoodPossible,
-      Likelihood.lessLikely => l10n.likelihoodLessLikely,
-    };
+  Likelihood.moreLikely => l10n.likelihoodMoreLikely,
+  Likelihood.possible => l10n.likelihoodPossible,
+  Likelihood.lessLikely => l10n.likelihoodLessLikely,
+};
 
 /// The result of a symptom check: urgency, causes grouped by likelihood band
 /// (never percentages), what to do, when to seek care, sources, disclaimer.
@@ -52,10 +52,17 @@ class AnswerCard extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration:
-                  BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
-              child: Text(urgencyLabel(l10n, a.urgency),
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                urgencyLabel(l10n, a.urgency),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
             const SizedBox(height: 8),
             if (a.summary.isNotEmpty) Text(a.summary),
@@ -70,17 +77,25 @@ class AnswerCard extends StatelessWidget {
                 if (a.causes.any((c) => c.likelihood == band)) ...[
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
-                    child: Text(likelihoodLabel(l10n, band),
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                    child: Text(
+                      likelihoodLabel(l10n, band),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ),
                   for (final c in a.causes.where((c) => c.likelihood == band))
                     ListTile(
                       dense: true,
                       contentPadding: EdgeInsets.zero,
-                      title:
-                          Text(c.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: c.explanation.isEmpty ? null : Text(c.explanation),
+                      title: Text(
+                        c.name,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: c.explanation.isEmpty
+                          ? null
+                          : Text(c.explanation),
                     ),
                 ],
             ],

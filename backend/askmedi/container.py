@@ -84,6 +84,7 @@ def build_container(settings: Settings) -> Container:
             settings.elevenlabs_api_key,
             stt_model=settings.elevenlabs_stt_model,
             tts_model=settings.elevenlabs_tts_model,
+            tts_models_by_language=settings.elevenlabs_tts_models_by_language,
             voice_id=settings.elevenlabs_voice_id,
             output_format=settings.elevenlabs_output_format,
         )

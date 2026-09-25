@@ -21,13 +21,15 @@ class ApiChatRepository implements ChatRepository {
     required String? episodeId,
     required String message,
     required String language,
-  }) async =>
-      ChatReply.fromJson(await _api.postJson('/chat', {
-        'episode_id': episodeId,
-        'message': message,
-        'language': language,
-      }));
+  }) async => ChatReply.fromJson(
+    await _api.postJson('/chat', {
+      'episode_id': episodeId,
+      'message': message,
+      'language': language,
+    }),
+  );
 }
 
-final chatRepositoryProvider =
-    Provider<ChatRepository>((ref) => ApiChatRepository(ref.watch(apiClientProvider)));
+final chatRepositoryProvider = Provider<ChatRepository>(
+  (ref) => ApiChatRepository(ref.watch(apiClientProvider)),
+);
