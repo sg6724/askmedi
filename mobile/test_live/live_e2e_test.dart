@@ -6,6 +6,9 @@
 //   flutter test test_live --dart-define-from-file=env/dev.json \
 //     --dart-define=E2E_EMAIL=... --dart-define=E2E_PASSWORD=... \
 //     --dart-define=E2E_LAB_PDF=path/to/lab.pdf --dart-define=E2E_STRIP_IMAGE=path/to/strip.png
+
+// The log lines are this suite's output.
+// ignore_for_file: avoid_print
 import 'dart:io';
 
 import 'package:askmedi/core/config/app_config.dart';
@@ -25,7 +28,6 @@ import 'package:askmedi/features/profile/health_profile.dart';
 import 'package:askmedi/features/profile/onboarding_repository.dart';
 import 'package:askmedi/features/profile/profile_repository.dart';
 import 'package:askmedi/features/reports/data/report_repository.dart';
-import 'package:askmedi/features/reports/domain/report_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
