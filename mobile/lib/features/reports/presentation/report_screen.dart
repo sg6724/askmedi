@@ -178,8 +178,9 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    if (_step == _Step.summary)
+    if (_step == _Step.summary) {
       return _SummaryView(summary: _summary!, onAgain: _restart);
+    }
     return Scaffold(
       appBar: AppBar(title: Text(l10n.reportTitle)),
       body: ListView(
@@ -459,8 +460,9 @@ class _ChartTabState extends ConsumerState<_ChartTab> {
       for (final v in widget.values)
         if (v.value != null && v.testName.isNotEmpty) v.testName,
     }.toList();
-    if (tests.isEmpty)
+    if (tests.isEmpty) {
       return EmptyState(l10n.chartEmpty, icon: Icons.show_chart);
+    }
     final test = (_test != null && tests.contains(_test))
         ? _test!
         : tests.first;

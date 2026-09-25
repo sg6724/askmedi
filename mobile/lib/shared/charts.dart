@@ -113,8 +113,9 @@ class LabelledBarChart extends StatelessWidget {
                   reservedSize: 28,
                   getTitlesWidget: (value, meta) {
                     final i = value.toInt();
-                    if (i < 0 || i >= bars.length)
+                    if (i < 0 || i >= bars.length) {
                       return const SizedBox.shrink();
+                    }
                     final label = bars[i].label;
                     return SideTitleWidget(
                       meta: meta,
