@@ -1,6 +1,7 @@
 abstract final class Routes {
   static const splash = '/';
   static const language = '/language';
+  static const welcome = '/welcome';
   static const signIn = '/sign-in';
   static const consent = '/consent';
   static const profileSetup = '/profile-setup';
@@ -25,6 +26,7 @@ abstract final class Routes {
   static const preApp = {
     splash,
     language,
+    welcome,
     signIn,
     consent,
     profileSetup,

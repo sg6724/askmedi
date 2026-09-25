@@ -30,7 +30,10 @@ class _FakeProfileRepository implements ProfileRepository {
   Future<HealthProfile?> loadProfile() async => null;
 
   @override
-  Future<void> updateProfile(HealthProfile profile, {required String language}) async {
+  Future<void> updateProfile(
+    HealthProfile profile, {
+    required String language,
+  }) async {
     updates.add(_SavedCall(profile, language));
   }
 }
@@ -72,26 +75,28 @@ void main() {
   }
 
   Future<void> enterBirthYear(WidgetTester tester, String year) async {
-    await tester.enterText(
-        find.widgetWithText(TextField, 'Birth year'), year);
+    await tester.enterText(find.widgetWithText(TextField, 'Birth year'), year);
     await tester.pump();
   }
 
-  testWidgets('an under-18 birth year shows the adults-only error and does not save',
-      (tester) async {
-    await pumpScreen(tester);
+  testWidgets(
+    'an under-18 birth year shows the adults-only error and does not save',
+    (tester) async {
+      await pumpScreen(tester);
 
-    await enterBirthYear(tester, '2012');
-    await tester.tap(find.text('Save and continue'));
-    await tester.pumpAndSettle();
+      await enterBirthYear(tester, '2012');
+      await tester.tap(find.text('Save and continue'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('AskMedi is only for adults (18+)'), findsOneWidget);
-    expect(repo.calls, isEmpty);
-    expect(saved, 0);
-  });
+      expect(find.text('AskMedi is only for adults (18+)'), findsOneWidget);
+      expect(repo.calls, isEmpty);
+      expect(saved, 0);
+    },
+  );
 
-  testWidgets('a valid year saves with the app locale and calls onSaved',
-      (tester) async {
+  testWidgets('a valid year saves with the app locale and calls onSaved', (
+    tester,
+  ) async {
     await pumpScreen(tester, prefsValues: {'app_locale': 'hi'});
 
     await enterBirthYear(tester, '1995');
@@ -104,8 +109,9 @@ void main() {
     expect(saved, 1);
   });
 
-  testWidgets('the pregnancy question appears only after choosing Female',
-      (tester) async {
+  testWidgets('the pregnancy question appears only after choosing Female', (
+    tester,
+  ) async {
     await pumpScreen(tester);
 
     expect(find.text('Are you currently pregnant?'), findsNothing);
@@ -121,12 +127,15 @@ void main() {
 
   Finder chipField(String label) => find.widgetWithText(TextField, label);
 
-  testWidgets('pending condition text is saved without pressing Enter',
-      (tester) async {
+  testWidgets('pending condition text is saved without pressing Enter', (
+    tester,
+  ) async {
     await pumpScreen(tester);
 
     await tester.enterText(
-        chipField('Known conditions (e.g. diabetes)'), 'Diabetes');
+      chipField('Known conditions (e.g. diabetes)'),
+      'Diabetes',
+    );
     await enterBirthYear(tester, '1995');
     await tester.tap(find.text('Save and continue'));
     await tester.pumpAndSettle();
@@ -136,121 +145,153 @@ void main() {
     expect(saved, 1);
   });
 
-  testWidgets('pending medicine and allergy text are saved without pressing Enter',
-      (tester) async {
+  testWidgets(
+    'pending medicine and allergy text are saved without pressing Enter',
+    (tester) async {
+      await pumpScreen(tester);
+
+      await tester.enterText(
+        chipField('Known conditions (e.g. diabetes)'),
+        'Diabetes',
+      );
+      await tester.enterText(
+        chipField('Medicines you take regularly'),
+        'Metformin',
+      );
+      await tester.enterText(chipField('Allergies'), 'Penicillin');
+      await enterBirthYear(tester, '1995');
+      await tester.tap(find.text('Save and continue'));
+      await tester.pumpAndSettle();
+
+      expect(repo.calls, hasLength(1));
+      final profile = repo.calls.single.profile;
+      expect(profile.conditions, ['Diabetes']);
+      expect(profile.medicines, ['Metformin']);
+      expect(profile.allergies, ['Penicillin']);
+    },
+  );
+
+  testWidgets('tapping the add icon adds a chip and clears the field', (
+    tester,
+  ) async {
     await pumpScreen(tester);
 
     await tester.enterText(
-        chipField('Known conditions (e.g. diabetes)'), 'Diabetes');
-    await tester.enterText(
-        chipField('Medicines you take regularly'), 'Metformin');
-    await tester.enterText(chipField('Allergies'), 'Penicillin');
-    await enterBirthYear(tester, '1995');
-    await tester.tap(find.text('Save and continue'));
-    await tester.pumpAndSettle();
-
-    expect(repo.calls, hasLength(1));
-    final profile = repo.calls.single.profile;
-    expect(profile.conditions, ['Diabetes']);
-    expect(profile.medicines, ['Metformin']);
-    expect(profile.allergies, ['Penicillin']);
-  });
-
-  testWidgets('tapping the add icon adds a chip and clears the field',
-      (tester) async {
-    await pumpScreen(tester);
-
-    await tester.enterText(
-        chipField('Known conditions (e.g. diabetes)'), 'Diabetes');
+      chipField('Known conditions (e.g. diabetes)'),
+      'Diabetes',
+    );
     await tester.tap(find.byIcon(Icons.add).first);
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(InputChip, 'Diabetes'), findsOneWidget);
     final field = tester.widget<TextField>(
-        chipField('Known conditions (e.g. diabetes)'));
+      chipField('Known conditions (e.g. diabetes)'),
+    );
     expect(field.controller!.text, isEmpty);
   });
 
-  testWidgets('pending text that duplicates a chip, or is blank, is not added',
-      (tester) async {
-    await pumpScreen(tester);
+  testWidgets(
+    'pending text that duplicates a chip, or is blank, is not added',
+    (tester) async {
+      await pumpScreen(tester);
 
-    await tester.enterText(
-        chipField('Known conditions (e.g. diabetes)'), 'Diabetes');
-    await tester.tap(find.byIcon(Icons.add).first);
-    await tester.pumpAndSettle();
-    await tester.enterText(
-        chipField('Known conditions (e.g. diabetes)'), '  Diabetes ');
-    await tester.enterText(chipField('Allergies'), '   ');
-    await enterBirthYear(tester, '1995');
-    await tester.tap(find.text('Save and continue'));
-    await tester.pumpAndSettle();
+      await tester.enterText(
+        chipField('Known conditions (e.g. diabetes)'),
+        'Diabetes',
+      );
+      await tester.tap(find.byIcon(Icons.add).first);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        chipField('Known conditions (e.g. diabetes)'),
+        '  Diabetes ',
+      );
+      await tester.enterText(chipField('Allergies'), '   ');
+      await enterBirthYear(tester, '1995');
+      await tester.tap(find.text('Save and continue'));
+      await tester.pumpAndSettle();
 
-    expect(repo.calls, hasLength(1));
-    expect(repo.calls.single.profile.conditions, ['Diabetes']);
-    expect(repo.calls.single.profile.allergies, isEmpty);
-  });
+      expect(repo.calls, hasLength(1));
+      expect(repo.calls.single.profile.conditions, ['Diabetes']);
+      expect(repo.calls.single.profile.allergies, isEmpty);
+    },
+  );
 
   testWidgets(
-      'pending text survives its field being scrolled out of the lazy list',
-      (tester) async {
-    // Tiny viewport + 3x text: the ListView builds lazily, so an unfocused chip
-    // field scrolled beyond the cache extent (250 px) is disposed with its State.
-    await pumpScreen(tester,
-        viewport: const Size(360, 320), textScale: 3.0);
-    final conditions = chipField('Known conditions (e.g. diabetes)');
-    final scrollable = find.byType(Scrollable).first;
+    'pending text survives its field being scrolled out of the lazy list',
+    (tester) async {
+      // Tiny viewport + 3x text: the ListView builds lazily, so an unfocused chip
+      // field scrolled beyond the cache extent (250 px) is disposed with its State.
+      await pumpScreen(tester, viewport: const Size(360, 320), textScale: 3.0);
+      final conditions = chipField('Known conditions (e.g. diabetes)');
+      final scrollable = find.byType(Scrollable).first;
 
-    // At this size even the year field starts below the cache extent.
-    await tester.scrollUntilVisible(
-        find.widgetWithText(TextField, 'Birth year'), 100,
-        scrollable: scrollable);
-    await enterBirthYear(tester, '1995');
-    await tester.scrollUntilVisible(conditions, 100, scrollable: scrollable);
-    await tester.enterText(conditions, 'Diabetes');
-    // A focused EditableText keeps itself alive when scrolled away. The user
-    // dismissing the keyboard / tapping elsewhere drops that focus.
-    FocusManager.instance.primaryFocus?.unfocus();
-    await tester.pump();
+      // At this size even the year field starts below the cache extent.
+      await tester.scrollUntilVisible(
+        find.widgetWithText(TextField, 'Birth year'),
+        100,
+        scrollable: scrollable,
+      );
+      await enterBirthYear(tester, '1995');
+      await tester.scrollUntilVisible(conditions, 100, scrollable: scrollable);
+      await tester.enterText(conditions, 'Diabetes');
+      // A focused EditableText keeps itself alive when scrolled away. The user
+      // dismissing the keyboard / tapping elsewhere drops that focus.
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
 
-    await tester.scrollUntilVisible(
-        find.text('Save and continue'), 100, scrollable: scrollable);
-    await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Save and continue'),
+        100,
+        scrollable: scrollable,
+      );
+      await tester.pumpAndSettle();
 
-    // Prove the premise: the conditions field really is gone from the tree.
-    expect(
+      // Prove the premise: the conditions field really is gone from the tree.
+      expect(
         find.widgetWithText(
-            TextField, 'Known conditions (e.g. diabetes)', skipOffstage: false),
-        findsNothing);
+          TextField,
+          'Known conditions (e.g. diabetes)',
+          skipOffstage: false,
+        ),
+        findsNothing,
+      );
 
-    await tester.tap(find.text('Save and continue'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Save and continue'));
+      await tester.pumpAndSettle();
 
-    expect(repo.calls, hasLength(1));
-    expect(repo.calls.single.profile.conditions, ['Diabetes']);
-    expect(saved, 1);
-  });
+      expect(repo.calls, hasLength(1));
+      expect(repo.calls.single.profile.conditions, ['Diabetes']);
+      expect(saved, 1);
+    },
+  );
 
-  testWidgets('edit mode: prefilled from the stored profile, saves via updateProfile',
-      (tester) async {
-    await pumpScreen(tester,
+  testWidgets(
+    'edit mode: prefilled from the stored profile, saves via updateProfile',
+    (tester) async {
+      await pumpScreen(
+        tester,
         initial: const HealthProfile(
-            displayName: 'Asha', birthYear: 1990, conditions: ['Asthma']));
+          displayName: 'Asha',
+          birthYear: 1990,
+          conditions: ['Asthma'],
+        ),
+      );
 
-    expect(find.text('Edit health profile'), findsOneWidget);
-    expect(find.widgetWithText(InputChip, 'Asthma'), findsOneWidget);
-    expect(find.text('1990'), findsOneWidget);
+      expect(find.text('Edit health profile'), findsOneWidget);
+      expect(find.widgetWithText(InputChip, 'Asthma'), findsOneWidget);
+      expect(find.text('1990'), findsOneWidget);
 
-    await tester.enterText(chipField('Allergies'), 'Dust');
-    await tester.tap(find.text('Save'));
-    await tester.pumpAndSettle();
+      await tester.enterText(chipField('Allergies'), 'Dust');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
 
-    expect(repo.calls, isEmpty);
-    expect(repo.updates, hasLength(1));
-    final p = repo.updates.single.profile;
-    expect(p.displayName, 'Asha');
-    expect(p.conditions, ['Asthma']);
-    expect(p.allergies, ['Dust']);
-    expect(saved, 1);
-  });
+      expect(repo.calls, isEmpty);
+      expect(repo.updates, hasLength(1));
+      final p = repo.updates.single.profile;
+      expect(p.displayName, 'Asha');
+      expect(p.conditions, ['Asthma']);
+      expect(p.allergies, ['Dust']);
+      expect(saved, 1);
+    },
+  );
 }

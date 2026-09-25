@@ -36,30 +36,34 @@ Future<GoRouter> pumpRouted(
       GoRoute(
         path: Routes.emergency,
         builder: (_, state) => EmergencyScreen(
-            args: state.extra is EmergencyArgs
-                ? state.extra! as EmergencyArgs
-                : const EmergencyArgs()),
+          args: state.extra is EmergencyArgs
+              ? state.extra! as EmergencyArgs
+              : const EmergencyArgs(),
+        ),
       ),
       GoRoute(
-          path: Routes.hospitals,
-          builder: (_, _) => const Scaffold(body: Text('HOSPITALS TAB'))),
+        path: Routes.hospitals,
+        builder: (_, _) => const Scaffold(body: Text('HOSPITALS TAB')),
+      ),
     ],
   );
   addTearDown(router.dispose);
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      urlOpenerProvider.overrideWithValue((opener ?? RecordingOpener()).call),
-      appLanguageProvider.overrideWithValue('en'),
-      ...overrides,
-    ],
-    child: MaterialApp.router(
-      theme: buildAppTheme(),
-      locale: const Locale('en'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      routerConfig: router,
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        urlOpenerProvider.overrideWithValue((opener ?? RecordingOpener()).call),
+        appLanguageProvider.overrideWithValue('en'),
+        ...overrides,
+      ],
+      child: MaterialApp.router(
+        theme: buildAppTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+      ),
     ),
-  ));
+  );
   await tester.pumpAndSettle();
   return router;
 }

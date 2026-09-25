@@ -12,8 +12,11 @@ class RecordingAdapter implements HttpClientAdapter {
   RequestOptions? last;
 
   @override
-  Future<ResponseBody> fetch(RequestOptions options,
-      Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
     last = options;
     return ResponseBody.fromString(
       jsonEncode(body ?? {'user_id': 'u-1', 'email': 'a@test.dev'}),
@@ -58,10 +61,10 @@ void main() {
   });
 
   ApiClient client(RecordingAdapter adapter) => ApiClient(
-        baseUrl: 'https://api.test',
-        tokenProvider: () async => 'tok',
-        dio: Dio()..httpClientAdapter = adapter,
-      );
+    baseUrl: 'https://api.test',
+    tokenProvider: () async => 'tok',
+    dio: Dio()..httpClientAdapter = adapter,
+  );
 
   test('postJson sends JSON and returns the body', () async {
     final adapter = RecordingAdapter(body: {'episode_id': 'e-1'});
@@ -72,13 +75,18 @@ void main() {
   });
 
   test('error responses become ApiException with the detail code', () async {
-    final adapter = RecordingAdapter(status: 503, body: {'detail': 'llm_unavailable'});
+    final adapter = RecordingAdapter(
+      status: 503,
+      body: {'detail': 'llm_unavailable'},
+    );
     await expectLater(
       client(adapter).postJson('/chat', {}),
-      throwsA(isA<ApiException>()
-          .having((e) => e.statusCode, 'statusCode', 503)
-          .having((e) => e.code, 'code', 'llm_unavailable')
-          .having((e) => e.isBusy, 'isBusy', true)),
+      throwsA(
+        isA<ApiException>()
+            .having((e) => e.statusCode, 'statusCode', 503)
+            .having((e) => e.code, 'code', 'llm_unavailable')
+            .having((e) => e.isBusy, 'isBusy', true),
+      ),
     );
   });
 
@@ -87,7 +95,11 @@ void main() {
     await client(adapter).postFile(
       '/medicine/scan',
       'image',
-      UploadFile(bytes: Uint8List.fromList([1, 2]), name: 'a.jpg', mimeType: 'image/jpeg'),
+      UploadFile(
+        bytes: Uint8List.fromList([1, 2]),
+        name: 'a.jpg',
+        mimeType: 'image/jpeg',
+      ),
     );
     final form = adapter.last!.data as FormData;
     expect(form.files.single.key, 'image');
@@ -98,7 +110,10 @@ void main() {
   test('getJson sends query parameters', () async {
     final adapter = RecordingAdapter(body: {'hospitals': []});
     await client(adapter).getJson('/hospitals', query: {'pincode': '411001'});
-    expect(adapter.last!.uri.toString(), 'https://api.test/hospitals?pincode=411001');
+    expect(
+      adapter.last!.uri.toString(),
+      'https://api.test/hospitals?pincode=411001',
+    );
   });
 
   test('mimeTypeFor guesses from the extension', () {

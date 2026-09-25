@@ -202,7 +202,7 @@ void _tallViewport(WidgetTester tester) {
 Future<void> pumpApp(
   WidgetTester tester,
   World world, {
-  Map<String, Object> prefs = const {'app_locale': 'en'},
+  Map<String, Object> prefs = const {'app_locale': 'en', 'intro_seen': true},
   bool settle = true,
 }) async {
   _tallViewport(tester);
@@ -259,8 +259,40 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
     await tester.pumpAndSettle();
 
+    // First run: the welcome slides explain the app before sign-in.
+    expect(find.text('Meet AskMedi'), findsOneWidget);
+    for (final title in [
+      'Check your symptoms',
+      'Medicines, reports and hospitals',
+      'Safe and private',
+    ]) {
+      await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+      await tester.pumpAndSettle();
+      expect(find.text(title), findsOneWidget);
+    }
+    await tester.tap(find.widgetWithText(FilledButton, 'Get started'));
+    await tester.pumpAndSettle();
+
     expect(find.text('Sign in to AskMedi'), findsOneWidget);
     expect(find.text('Choose your language'), findsNothing);
+  });
+
+  testWidgets('welcome slides can be swiped and skipped, and are shown once', (
+    tester,
+  ) async {
+    await pumpApp(tester, World(), prefs: const {'app_locale': 'en'});
+    expect(find.text('Meet AskMedi'), findsOneWidget);
+
+    await tester.fling(find.text('Meet AskMedi'), const Offset(-600, 0), 1500);
+    await tester.pumpAndSettle();
+    expect(find.text('Check your symptoms'), findsOneWidget);
+
+    await tester.tap(find.text('Skip'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sign in to AskMedi'), findsOneWidget);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('intro_seen'), isTrue);
   });
 
   testWidgets('email + password sign-in moves on to consent', (tester) async {
@@ -333,7 +365,7 @@ void main() {
     await pumpApp(
       tester,
       World(signedIn: true, status: _done),
-      prefs: const {'app_locale': 'hi'},
+      prefs: const {'app_locale': 'hi', 'intro_seen': true},
     );
     final hi = lookupAppLocalizations(const Locale('hi'));
 

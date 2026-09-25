@@ -36,12 +36,15 @@ class _LanguageScreenState extends ConsumerState<LanguageScreen> {
               Expanded(
                 child: ListView(
                   children: [
-                    Text(l10n.chooseLanguage,
-                        style: Theme.of(context).textTheme.headlineSmall),
+                    Text(
+                      l10n.chooseLanguage,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
                     const SizedBox(height: 8),
-                    Text(l10n.languageHint,
-                        style:
-                            const TextStyle(color: AppColors.textSecondary)),
+                    Text(
+                      l10n.languageHint,
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    ),
                     const SizedBox(height: 24),
                     for (final (locale, name, sample) in _options)
                       Card(
@@ -49,8 +52,10 @@ class _LanguageScreenState extends ConsumerState<LanguageScreen> {
                           title: Text(name),
                           subtitle: Text(sample),
                           trailing: _selected == locale
-                              ? const Icon(Icons.check_circle,
-                                  color: AppColors.navy)
+                              ? const Icon(
+                                  Icons.check_circle,
+                                  color: AppColors.navy,
+                                )
                               : null,
                           onTap: () => setState(() => _selected = locale),
                         ),

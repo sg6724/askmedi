@@ -76,59 +76,70 @@ class FakeAudioOutput implements AudioOutput {
 }
 
 Map<String, dynamic> followup() => {
-      'episode_id': 'ep-1',
-      'type': 'followup',
-      'readback': ['Fever', '1 day'],
-      'followup': {
-        'question': 'How high is the fever?',
-        'options': ['Below 100°F', 'Above 102°F'],
-      },
-      'answer': null,
-      'emergency': null,
-      'message': 'How high is the fever?',
-      'sources': [],
-      'disclaimer': 'Not a diagnosis.',
-    };
+  'episode_id': 'ep-1',
+  'type': 'followup',
+  'readback': ['Fever', '1 day'],
+  'followup': {
+    'question': 'How high is the fever?',
+    'options': ['Below 100°F', 'Above 102°F'],
+  },
+  'answer': null,
+  'emergency': null,
+  'message': 'How high is the fever?',
+  'sources': [],
+  'disclaimer': 'Not a diagnosis.',
+};
 
 Map<String, dynamic> answer() => {
-      'episode_id': 'ep-1',
-      'type': 'answer',
-      'readback': ['Fever'],
-      'followup': null,
-      'answer': {
-        'urgency': 'see_doctor_soon',
-        'summary': 'Likely a viral fever.',
-        'causes': [
-          {'name': 'Viral fever', 'likelihood': 'more_likely', 'explanation': 'Common.'},
-          {'name': 'Dengue', 'likelihood': 'less_likely', 'explanation': 'Check if rash.'},
-        ],
-        'do_now': ['Drink fluids'],
-        'seek_care_if': ['Fever lasts over 3 days'],
+  'episode_id': 'ep-1',
+  'type': 'answer',
+  'readback': ['Fever'],
+  'followup': null,
+  'answer': {
+    'urgency': 'see_doctor_soon',
+    'summary': 'Likely a viral fever.',
+    'causes': [
+      {
+        'name': 'Viral fever',
+        'likelihood': 'more_likely',
+        'explanation': 'Common.',
       },
-      'emergency': null,
-      'message': 'Likely a viral fever.',
-      'sources': [
-        {'title': 'MedlinePlus: Fever', 'url': 'https://medlineplus.gov/fever.html'},
-      ],
-      'disclaimer': 'AskMedi gives health information, not a diagnosis.',
-    };
+      {
+        'name': 'Dengue',
+        'likelihood': 'less_likely',
+        'explanation': 'Check if rash.',
+      },
+    ],
+    'do_now': ['Drink fluids'],
+    'seek_care_if': ['Fever lasts over 3 days'],
+  },
+  'emergency': null,
+  'message': 'Likely a viral fever.',
+  'sources': [
+    {
+      'title': 'MedlinePlus: Fever',
+      'url': 'https://medlineplus.gov/fever.html',
+    },
+  ],
+  'disclaimer': 'AskMedi gives health information, not a diagnosis.',
+};
 
 Map<String, dynamic> emergency() => {
-      'episode_id': 'ep-2',
-      'type': 'emergency',
-      'readback': [],
-      'followup': null,
-      'answer': null,
-      'emergency': {
-        'rule_id': 'chest_pain',
-        'reason': 'Chest pain can be a heart attack.',
-        'call': ['112', '108'],
-        'source': {'title': 'WHO ETAT', 'url': 'https://who.int/etat'},
-      },
-      'message': 'Call 112 now.',
-      'sources': [],
-      'disclaimer': '',
-    };
+  'episode_id': 'ep-2',
+  'type': 'emergency',
+  'readback': [],
+  'followup': null,
+  'answer': null,
+  'emergency': {
+    'rule_id': 'chest_pain',
+    'reason': 'Chest pain can be a heart attack.',
+    'call': ['112', '108'],
+    'source': {'title': 'WHO ETAT', 'url': 'https://who.int/etat'},
+  },
+  'message': 'Call 112 now.',
+  'sources': [],
+  'disclaimer': '',
+};
 
 void main() {
   late FakeRecorder recorder;
@@ -145,18 +156,17 @@ void main() {
     FakeVoiceRepository? voice,
     RecordingOpener? opener,
     bool talk = false,
-  }) =>
-      pumpRouted(
-        tester,
-        ChatScreen(voice: talk),
-        opener: opener,
-        overrides: [
-          chatRepositoryProvider.overrideWithValue(chat),
-          voiceRepositoryProvider.overrideWithValue(voice ?? FakeVoiceRepository()),
-          voiceRecorderProvider.overrideWithValue(recorder),
-          audioOutputProvider.overrideWithValue(output),
-        ],
-      );
+  }) => pumpRouted(
+    tester,
+    ChatScreen(voice: talk),
+    opener: opener,
+    overrides: [
+      chatRepositoryProvider.overrideWithValue(chat),
+      voiceRepositoryProvider.overrideWithValue(voice ?? FakeVoiceRepository()),
+      voiceRecorderProvider.overrideWithValue(recorder),
+      audioOutputProvider.overrideWithValue(output),
+    ],
+  );
 
   Future<void> type(WidgetTester tester, String text) async {
     await tester.enterText(find.byType(TextField), text);
@@ -164,69 +174,80 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('disclosure, follow-up chips, then an answer card with bands and sources',
-      (tester) async {
-    final chat = FakeChatRepository([followup(), answer()]);
-    final opener = RecordingOpener();
-    await pump(tester, chat, opener: opener);
+  testWidgets(
+    'disclosure, follow-up chips, then an answer card with bands and sources',
+    (tester) async {
+      final chat = FakeChatRepository([followup(), answer()]);
+      final opener = RecordingOpener();
+      await pump(tester, chat, opener: opener);
 
-    expect(find.textContaining('AI assistant'), findsOneWidget);
+      expect(find.textContaining('AI assistant'), findsOneWidget);
 
-    await type(tester, 'I have fever');
-    expect(chat.sent.single.episodeId, isNull);
-    expect(chat.sent.single.language, 'en');
-    expect(find.text('I have fever'), findsOneWidget);
-    expect(find.text('Fever'), findsOneWidget); // read-back chip
-    expect(find.text('How high is the fever?'), findsOneWidget);
+      await type(tester, 'I have fever');
+      expect(chat.sent.single.episodeId, isNull);
+      expect(chat.sent.single.language, 'en');
+      expect(find.text('I have fever'), findsOneWidget);
+      expect(find.text('Fever'), findsOneWidget); // read-back chip
+      expect(find.text('How high is the fever?'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(ActionChip, 'Above 102°F'));
-    await tester.pumpAndSettle();
-    expect(chat.sent.last.message, 'Above 102°F');
-    expect(chat.sent.last.episodeId, 'ep-1');
+      await tester.tap(find.widgetWithText(ActionChip, 'Above 102°F'));
+      await tester.pumpAndSettle();
+      expect(chat.sent.last.message, 'Above 102°F');
+      expect(chat.sent.last.episodeId, 'ep-1');
 
-    expect(find.text('See a doctor in the next few days'), findsOneWidget);
-    expect(find.text('More likely'), findsOneWidget);
-    expect(find.text('Less likely'), findsOneWidget);
-    expect(find.text('Possible'), findsNothing); // no causes in that band
-    expect(find.text('Viral fever'), findsOneWidget);
-    expect(find.text('Drink fluids'), findsOneWidget);
-    expect(find.textContaining('%'), findsNothing);
+      expect(find.text('See a doctor in the next few days'), findsOneWidget);
+      expect(find.text('More likely'), findsOneWidget);
+      expect(find.text('Less likely'), findsOneWidget);
+      expect(find.text('Possible'), findsNothing); // no causes in that band
+      expect(find.text('Viral fever'), findsOneWidget);
+      expect(find.text('Drink fluids'), findsOneWidget);
+      expect(find.textContaining('%'), findsNothing);
 
-    await tester.ensureVisible(find.text('MedlinePlus: Fever'));
-    await tester.tap(find.text('MedlinePlus: Fever'));
-    expect(opener.opened.single.toString(), 'https://medlineplus.gov/fever.html');
+      await tester.ensureVisible(find.text('MedlinePlus: Fever'));
+      await tester.tap(find.text('MedlinePlus: Fever'));
+      expect(
+        opener.opened.single.toString(),
+        'https://medlineplus.gov/fever.html',
+      );
 
-    await tester.ensureVisible(find.text('Find a hospital'));
-    await tester.tap(find.text('Find a hospital'));
-    await tester.pumpAndSettle();
-    expect(find.text('HOSPITALS TAB'), findsOneWidget);
-  });
+      await tester.ensureVisible(find.text('Find a hospital'));
+      await tester.tap(find.text('Find a hospital'));
+      await tester.pumpAndSettle();
+      expect(find.text('HOSPITALS TAB'), findsOneWidget);
+    },
+  );
 
-  testWidgets('emergency reply opens the Emergency screen with reason and source',
-      (tester) async {
-    await pump(tester, FakeChatRepository([emergency()]));
+  testWidgets(
+    'emergency reply opens the Emergency screen with reason and source',
+    (tester) async {
+      await pump(tester, FakeChatRepository([emergency()]));
 
-    await type(tester, 'seene mein dard');
+      await type(tester, 'seene mein dard');
 
-    expect(find.byType(EmergencyScreen), findsOneWidget);
-    expect(find.text('Chest pain can be a heart attack.'), findsOneWidget);
-    expect(find.text('Source: WHO ETAT'), findsOneWidget);
-    expect(find.text('Call 112 — Emergency'), findsOneWidget);
-  });
+      expect(find.byType(EmergencyScreen), findsOneWidget);
+      expect(find.text('Chest pain can be a heart attack.'), findsOneWidget);
+      expect(find.text('Source: WHO ETAT'), findsOneWidget);
+      expect(find.text('Call 112 — Emergency'), findsOneWidget);
+    },
+  );
 
-  testWidgets('repeat reply shows the message and Find a hospital', (tester) async {
+  testWidgets('repeat reply shows the message and Find a hospital', (
+    tester,
+  ) async {
     await pump(
-        tester,
-        FakeChatRepository([
-          {
-            'episode_id': 'ep-3',
-            'type': 'repeat',
-            'readback': [],
-            'message': 'You asked about headache several times. Please see a doctor.',
-            'sources': [],
-            'disclaimer': '',
-          },
-        ]));
+      tester,
+      FakeChatRepository([
+        {
+          'episode_id': 'ep-3',
+          'type': 'repeat',
+          'readback': [],
+          'message':
+              'You asked about headache several times. Please see a doctor.',
+          'sources': [],
+          'disclaimer': '',
+        },
+      ]),
+    );
 
     await type(tester, 'headache again');
 
@@ -234,8 +255,9 @@ void main() {
     expect(find.text('Find a hospital'), findsOneWidget);
   });
 
-  testWidgets('503 shows "service is busy"; Retry resends the same message',
-      (tester) async {
+  testWidgets('503 shows "service is busy"; Retry resends the same message', (
+    tester,
+  ) async {
     final chat = FakeChatRepository([
       const ApiException(statusCode: 503, code: 'llm_unavailable'),
       followup(),
@@ -243,17 +265,25 @@ void main() {
     await pump(tester, chat);
 
     await type(tester, 'fever');
-    expect(find.text('The service is busy. Please try again in a minute.'), findsOneWidget);
+    expect(
+      find.text('The service is busy. Please try again in a minute.'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Retry'));
     await tester.pumpAndSettle();
     expect(chat.sent.map((s) => s.message), ['fever', 'fever']);
-    expect(find.text('The service is busy. Please try again in a minute.'), findsNothing);
+    expect(
+      find.text('The service is busy. Please try again in a minute.'),
+      findsNothing,
+    );
     expect(find.text('How high is the fever?'), findsOneWidget);
     expect(find.text('fever'), findsOneWidget); // not duplicated in the thread
   });
 
-  testWidgets('voice: record -> transcribe -> chat -> reply is spoken', (tester) async {
+  testWidgets('voice: record -> transcribe -> chat -> reply is spoken', (
+    tester,
+  ) async {
     final chat = FakeChatRepository([followup()]);
     final voice = FakeVoiceRepository(text: 'mujhe fever hai');
     await pump(tester, chat, voice: voice);
@@ -272,23 +302,31 @@ void main() {
     expect(output.plays, 1);
   });
 
-  testWidgets('voice unavailable (503) shows a friendly note; typing still works',
-      (tester) async {
-    final chat = FakeChatRepository([followup()]);
-    await pump(tester, chat,
+  testWidgets(
+    'voice unavailable (503) shows a friendly note; typing still works',
+    (tester) async {
+      final chat = FakeChatRepository([followup()]);
+      await pump(
+        tester,
+        chat,
         voice: FakeVoiceRepository(
-            error: const ApiException(statusCode: 503, code: 'voice_unavailable')));
+          error: const ApiException(statusCode: 503, code: 'voice_unavailable'),
+        ),
+      );
 
-    await tester.tap(find.byTooltip('Speak'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.stop));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Speak'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.stop));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Voice is not available right now. You can still type.'),
-        findsOneWidget);
-    expect(chat.sent, isEmpty);
+      expect(
+        find.text('Voice is not available right now. You can still type.'),
+        findsOneWidget,
+      );
+      expect(chat.sent, isEmpty);
 
-    await type(tester, 'fever');
-    expect(find.text('How high is the fever?'), findsOneWidget);
-  });
+      await type(tester, 'fever');
+      expect(find.text('How high is the fever?'), findsOneWidget);
+    },
+  );
 }

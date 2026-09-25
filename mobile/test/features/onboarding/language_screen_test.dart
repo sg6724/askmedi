@@ -9,24 +9,32 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../helpers/pump_app.dart';
 
 void main() {
-  testWidgets('shows exactly the three languages with script samples',
-      (tester) async {
+  testWidgets('shows exactly the three languages with script samples', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
-    await pumpLocalized(tester, const LanguageScreen(),
-        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)]);
+    await pumpLocalized(
+      tester,
+      const LanguageScreen(),
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    );
 
     expect(find.text('English'), findsOneWidget);
     expect(find.text('हिंदी'), findsOneWidget);
     expect(find.text('मराठी'), findsOneWidget);
   });
 
-  testWidgets('choosing Marathi and continuing persists the locale',
-      (tester) async {
+  testWidgets('choosing Marathi and continuing persists the locale', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
-    await pumpLocalized(tester, const LanguageScreen(),
-        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)]);
+    await pumpLocalized(
+      tester,
+      const LanguageScreen(),
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    );
 
     await tester.tap(find.text('मराठी'));
     await tester.pump();
@@ -34,13 +42,15 @@ void main() {
     await tester.pumpAndSettle();
 
     final container = ProviderScope.containerOf(
-        tester.element(find.byType(LanguageScreen)));
+      tester.element(find.byType(LanguageScreen)),
+    );
     expect(container.read(localeControllerProvider), const Locale('mr'));
     expect(prefs.getString('app_locale'), 'mr');
   });
 
-  testWidgets('stays usable at 2.0x text scale on a small screen',
-      (tester) async {
+  testWidgets('stays usable at 2.0x text scale on a small screen', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(360, 640);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);

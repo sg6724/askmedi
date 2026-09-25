@@ -18,9 +18,7 @@ void main() {
         Builder(
           builder: (context) {
             final l10n = AppLocalizations.of(context);
-            return Column(
-              children: [Text(l10n.appTitle), Text(l10n.tagline)],
-            );
+            return Column(children: [Text(l10n.appTitle), Text(l10n.tagline)]);
           },
         ),
         locale: Locale(entry.key),

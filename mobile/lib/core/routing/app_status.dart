@@ -3,6 +3,7 @@ import 'routes.dart';
 class AppStatus {
   const AppStatus({
     required this.languageChosen,
+    required this.introSeen,
     required this.signedIn,
     required this.onboardingLoaded,
     required this.consentsGiven,
@@ -10,6 +11,9 @@ class AppStatus {
   });
 
   final bool languageChosen;
+
+  /// The welcome slides (what AskMedi does) have been shown on this device.
+  final bool introSeen;
   final bool signedIn;
   final bool onboardingLoaded;
   final bool consentsGiven;
@@ -28,6 +32,7 @@ String? redirectFor(AppStatus s, String location) {
 
 String? _gateFor(AppStatus s) {
   if (!s.languageChosen) return Routes.language;
+  if (!s.introSeen) return Routes.welcome;
   if (!s.signedIn) return Routes.signIn;
   if (!s.onboardingLoaded) return Routes.splash;
   if (!s.consentsGiven) return Routes.consent;

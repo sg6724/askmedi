@@ -20,38 +20,57 @@ class FakeHistory implements HistoryRepository {
   }
 }
 
-SymptomEpisode ep(String id, DateTime at, List<String> symptoms,
-        {int followups = 0, bool repeat = false, String? urgency}) =>
-    SymptomEpisode(
-        id: id,
-        startedAt: at,
-        symptoms: symptoms,
-        followupCount: followups,
-        repeatFlag: repeat,
-        urgency: urgency);
+SymptomEpisode ep(
+  String id,
+  DateTime at,
+  List<String> symptoms, {
+  int followups = 0,
+  bool repeat = false,
+  String? urgency,
+}) => SymptomEpisode(
+  id: id,
+  startedAt: at,
+  symptoms: symptoms,
+  followupCount: followups,
+  repeatFlag: repeat,
+  urgency: urgency,
+);
 
 void main() {
   final now = DateTime(2026, 9, 25, 12); // a Friday
   final data = HistoryData(
     episodes: [
-      ep('e1', now.subtract(const Duration(days: 1)), ['Fever', 'Headache'],
-          followups: 3, urgency: 'see_doctor_soon'),
-      ep('e2', now.subtract(const Duration(days: 2)), ['fever'], followups: 1, repeat: true),
+      ep(
+        'e1',
+        now.subtract(const Duration(days: 1)),
+        ['Fever', 'Headache'],
+        followups: 3,
+        urgency: 'see_doctor_soon',
+      ),
+      ep(
+        'e2',
+        now.subtract(const Duration(days: 2)),
+        ['fever'],
+        followups: 1,
+        repeat: true,
+      ),
       ep('e3', now.subtract(const Duration(days: 9)), ['Cough'], followups: 2),
     ],
     medicines: [
       MedicineLookupItem(
-          id: 'm1',
-          createdAt: now.subtract(const Duration(hours: 3)),
-          query: 'Paracetamol',
-          brand: 'Crocin 500'),
+        id: 'm1',
+        createdAt: now.subtract(const Duration(hours: 3)),
+        query: 'Paracetamol',
+        brand: 'Crocin 500',
+      ),
     ],
     reports: [
       ReportItem(
-          id: 'r1',
-          createdAt: now.subtract(const Duration(days: 5)),
-          lab: 'City Lab',
-          confirmed: true),
+        id: 'r1',
+        createdAt: now.subtract(const Duration(days: 5)),
+        lab: 'City Lab',
+        confirmed: true,
+      ),
     ],
     values: {
       'Haemoglobin': [
@@ -84,53 +103,85 @@ void main() {
       final all = timeline(data, HistoryFilter.all);
       expect(all.first, isA<MedicineItem>());
       expect(all, hasLength(5));
-      expect(timeline(data, HistoryFilter.reports).single, isA<ReportTimelineItem>());
+      expect(
+        timeline(data, HistoryFilter.reports).single,
+        isA<ReportTimelineItem>(),
+      );
       expect(timeline(data, HistoryFilter.symptoms), hasLength(3));
     });
   });
 
-  testWidgets('timeline with filters, analytics with charts and repeat banner',
-      (tester) async {
-    await pumpRouted(tester, const HistoryScreen(),
-        overrides: [historyRepositoryProvider.overrideWithValue(FakeHistory(data))]);
+  testWidgets(
+    'timeline with filters, analytics with charts and repeat banner',
+    (tester) async {
+      await pumpRouted(
+        tester,
+        const HistoryScreen(),
+        overrides: [
+          historyRepositoryProvider.overrideWithValue(FakeHistory(data)),
+        ],
+      );
 
-    expect(find.text('Crocin 500'), findsOneWidget);
-    expect(find.text('City Lab'), findsOneWidget);
-    expect(find.text('Fever, Headache'), findsOneWidget);
+      expect(find.text('Crocin 500'), findsOneWidget);
+      expect(find.text('City Lab'), findsOneWidget);
+      expect(find.text('Fever, Headache'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Medicines'));
-    await tester.pumpAndSettle();
-    expect(find.text('Crocin 500'), findsOneWidget);
-    expect(find.text('City Lab'), findsNothing);
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Medicines'));
+      await tester.pumpAndSettle();
+      expect(find.text('Crocin 500'), findsOneWidget);
+      expect(find.text('City Lab'), findsNothing);
 
-    await tester.tap(find.text('Analytics'));
-    await tester.pumpAndSettle();
-    expect(find.text('You have asked about the same symptoms several times. Please see a doctor.'),
-        findsOneWidget);
-    expect(find.byType(BarChart), findsNWidgets(2));
-    expect(find.text('2.0'), findsOneWidget);
-    await tester.ensureVisible(find.byType(LineChart));
-    expect(find.byType(LineChart), findsOneWidget);
-  });
+      await tester.tap(find.text('Analytics'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'You have asked about the same symptoms several times. Please see a doctor.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(BarChart), findsNWidgets(2));
+      expect(find.text('2.0'), findsOneWidget);
+      await tester.ensureVisible(find.byType(LineChart));
+      expect(find.byType(LineChart), findsOneWidget);
+    },
+  );
 
   testWidgets('no data -> empty states, never fake data', (tester) async {
-    await pumpRouted(tester, const HistoryScreen(),
-        overrides: [historyRepositoryProvider.overrideWithValue(FakeHistory(const HistoryData()))]);
+    await pumpRouted(
+      tester,
+      const HistoryScreen(),
+      overrides: [
+        historyRepositoryProvider.overrideWithValue(
+          FakeHistory(const HistoryData()),
+        ),
+      ],
+    );
 
     expect(find.textContaining('Nothing here yet'), findsOneWidget);
     await tester.tap(find.text('Analytics'));
     await tester.pumpAndSettle();
-    expect(find.text('No data yet. Analytics appear after you use AskMedi.'), findsOneWidget);
+    expect(
+      find.text('No data yet. Analytics appear after you use AskMedi.'),
+      findsOneWidget,
+    );
     expect(find.byType(BarChart), findsNothing);
   });
 
   testWidgets('load error -> message with Retry', (tester) async {
-    await pumpRouted(tester, const HistoryScreen(), overrides: [
-      historyRepositoryProvider
-          .overrideWithValue(FakeHistory(const HistoryData(), error: Exception('offline'))),
-    ]);
+    await pumpRouted(
+      tester,
+      const HistoryScreen(),
+      overrides: [
+        historyRepositoryProvider.overrideWithValue(
+          FakeHistory(const HistoryData(), error: Exception('offline')),
+        ),
+      ],
+    );
 
-    expect(find.text('Something went wrong. Please try again.'), findsOneWidget);
+    expect(
+      find.text('Something went wrong. Please try again.'),
+      findsOneWidget,
+    );
     expect(find.text('Retry'), findsOneWidget);
   });
 }

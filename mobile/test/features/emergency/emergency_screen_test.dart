@@ -17,17 +17,25 @@ class FakeLocation implements LocationService {
 }
 
 void main() {
-  testWidgets('generic message from Home; one-tap 112 / 108 / 102', (tester) async {
+  testWidgets('generic message from Home; one-tap 112 / 108 / 102', (
+    tester,
+  ) async {
     final opener = RecordingOpener();
     await pumpRouted(tester, const EmergencyScreen(), opener: opener);
 
-    expect(find.text('If you or someone near you is in danger, call for help now.'),
-        findsOneWidget);
+    expect(
+      find.text('If you or someone near you is in danger, call for help now.'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Call 112 — Emergency'));
     await tester.tap(find.text('Call 108 — Ambulance'));
     await tester.tap(find.text('Call 102 — Mother & child ambulance'));
-    expect(opener.opened.map((u) => u.toString()), ['tel:112', 'tel:108', 'tel:102']);
+    expect(opener.opened.map((u) => u.toString()), [
+      'tel:112',
+      'tel:108',
+      'tel:102',
+    ]);
   });
 
   testWidgets('shows the reason and its source', (tester) async {
@@ -36,7 +44,10 @@ void main() {
       const EmergencyScreen(
         args: EmergencyArgs(
           reason: 'Stroke signs need care within minutes.',
-          source: Source(title: 'MedlinePlus: Stroke', url: 'https://medlineplus.gov/stroke'),
+          source: Source(
+            title: 'MedlinePlus: Stroke',
+            url: 'https://medlineplus.gov/stroke',
+          ),
         ),
       ),
     );
@@ -45,11 +56,16 @@ void main() {
     expect(find.text('Source: MedlinePlus: Stroke'), findsOneWidget);
   });
 
-  testWidgets('share my location -> WhatsApp link with a Google Maps URL', (tester) async {
+  testWidgets('share my location -> WhatsApp link with a Google Maps URL', (
+    tester,
+  ) async {
     final opener = RecordingOpener();
-    await pumpRouted(tester, const EmergencyScreen(),
-        opener: opener,
-        overrides: [locationServiceProvider.overrideWithValue(FakeLocation())]);
+    await pumpRouted(
+      tester,
+      const EmergencyScreen(),
+      opener: opener,
+      overrides: [locationServiceProvider.overrideWithValue(FakeLocation())],
+    );
 
     await tester.tap(find.text('Share my location'));
     await tester.pumpAndSettle();
@@ -57,18 +73,29 @@ void main() {
 
     final uri = opener.opened.single;
     expect(uri.host, 'wa.me');
-    expect(uri.queryParameters['text'],
-        contains('https://www.google.com/maps/search/?api=1&query=18.520400,73.856700'));
+    expect(
+      uri.queryParameters['text'],
+      contains(
+        'https://www.google.com/maps/search/?api=1&query=18.520400,73.856700',
+      ),
+    );
 
     await tester.tap(find.text('Send as SMS'));
     expect(opener.opened.last.scheme, 'sms');
   });
 
-  testWidgets('location denied shows a message, calls still work', (tester) async {
-    await pumpRouted(tester, const EmergencyScreen(), overrides: [
-      locationServiceProvider
-          .overrideWithValue(FakeLocation(failure: LocationFailure.denied)),
-    ]);
+  testWidgets('location denied shows a message, calls still work', (
+    tester,
+  ) async {
+    await pumpRouted(
+      tester,
+      const EmergencyScreen(),
+      overrides: [
+        locationServiceProvider.overrideWithValue(
+          FakeLocation(failure: LocationFailure.denied),
+        ),
+      ],
+    );
 
     await tester.tap(find.text('Share my location'));
     await tester.pumpAndSettle();

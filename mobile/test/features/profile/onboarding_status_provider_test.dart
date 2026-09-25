@@ -36,25 +36,29 @@ Future<ProviderContainer> _container({
 }
 
 void main() {
-  test('a failing fetch surfaces as an error promptly (no silent retry)',
-      () async {
-    final container = await _container(
-      signedIn: true,
-      repo: _FakeOnboardingRepository(error: Exception('network down')),
-    );
+  test(
+    'a failing fetch surfaces as an error promptly (no silent retry)',
+    () async {
+      final container = await _container(
+        signedIn: true,
+        repo: _FakeOnboardingRepository(error: Exception('network down')),
+      );
 
-    await expectLater(
-      container.read(onboardingStatusProvider.future),
-      throwsA(isA<Exception>()),
-    ).timeout(const Duration(seconds: 5));
-  });
+      await expectLater(
+        container.read(onboardingStatusProvider.future),
+        throwsA(isA<Exception>()),
+      ).timeout(const Duration(seconds: 5));
+    },
+  );
 
   test('yields the fetched status when signed in', () async {
     final container = await _container(
       signedIn: true,
       repo: _FakeOnboardingRepository(
         status: const OnboardingStatus(
-            consentsGiven: true, profileComplete: true),
+          consentsGiven: true,
+          profileComplete: true,
+        ),
       ),
     );
 

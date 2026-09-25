@@ -15,13 +15,16 @@ class LocaleController extends Notifier<Locale?> {
   }
 
   Future<void> setLocale(Locale locale) async {
-    await ref.read(sharedPreferencesProvider).setString(_key, locale.languageCode);
+    await ref
+        .read(sharedPreferencesProvider)
+        .setString(_key, locale.languageCode);
     state = locale;
   }
 }
 
-final localeControllerProvider =
-    NotifierProvider<LocaleController, Locale?>(LocaleController.new);
+final localeControllerProvider = NotifierProvider<LocaleController, Locale?>(
+  LocaleController.new,
+);
 
 /// The language code sent to the API (`en`, `hi` or `mr`).
 final appLanguageProvider = Provider<String>(

@@ -43,73 +43,87 @@ ProviderContainer _container(List overrides) {
 
 void main() {
   group('meProvider', () {
-    test('a failing call reaches AsyncError promptly, without retrying',
-        () async {
-      final api = _FakeApiClient(fail: true);
-      final container = _container([apiClientProvider.overrideWithValue(api)]);
-      container.listen(meProvider, (_, _) {});
+    test(
+      'a failing call reaches AsyncError promptly, without retrying',
+      () async {
+        final api = _FakeApiClient(fail: true);
+        final container = _container([
+          apiClientProvider.overrideWithValue(api),
+        ]);
+        container.listen(meProvider, (_, _) {});
 
-      // Riverpod 3's default retry would keep this in AsyncLoading for ~38 s.
-      await expectLater(
-        container.read(meProvider.future),
-        throwsA(isA<Exception>()),
-      ).timeout(const Duration(seconds: 2));
-      expect(container.read(meProvider).hasError, isTrue);
-      expect(api.calls, 1);
-    });
+        // Riverpod 3's default retry would keep this in AsyncLoading for ~38 s.
+        await expectLater(
+          container.read(meProvider.future),
+          throwsA(isA<Exception>()),
+        ).timeout(const Duration(seconds: 2));
+        expect(container.read(meProvider).hasError, isTrue);
+        expect(api.calls, 1);
+      },
+    );
 
-    test('is disposed with its last listener (no cross-account cache)',
-        () async {
-      final api = _FakeApiClient();
-      final container = _container([apiClientProvider.overrideWithValue(api)]);
+    test(
+      'is disposed with its last listener (no cross-account cache)',
+      () async {
+        final api = _FakeApiClient();
+        final container = _container([
+          apiClientProvider.overrideWithValue(api),
+        ]);
 
-      final sub = container.listen(meProvider, (_, _) {});
-      await container.read(meProvider.future);
-      expect(container.exists(meProvider), isTrue);
+        final sub = container.listen(meProvider, (_, _) {});
+        await container.read(meProvider.future);
+        expect(container.exists(meProvider), isTrue);
 
-      sub.close();
-      await container.pump();
-      expect(container.exists(meProvider), isFalse);
+        sub.close();
+        await container.pump();
+        expect(container.exists(meProvider), isFalse);
 
-      // Listening again (the next account's Home) recomputes.
-      container.listen(meProvider, (_, _) {});
-      await container.read(meProvider.future);
-      expect(api.calls, 2);
-    });
+        // Listening again (the next account's Home) recomputes.
+        container.listen(meProvider, (_, _) {});
+        await container.read(meProvider.future);
+        expect(api.calls, 2);
+      },
+    );
   });
 
   group('displayNameProvider', () {
-    test('a failing call reaches AsyncError promptly, without retrying',
-        () async {
-      final supabase = _OfflineSupabase();
-      final container =
-          _container([supabaseClientProvider.overrideWithValue(supabase)]);
-      container.listen(displayNameProvider, (_, _) {});
+    test(
+      'a failing call reaches AsyncError promptly, without retrying',
+      () async {
+        final supabase = _OfflineSupabase();
+        final container = _container([
+          supabaseClientProvider.overrideWithValue(supabase),
+        ]);
+        container.listen(displayNameProvider, (_, _) {});
 
-      await expectLater(
-        container.read(displayNameProvider.future),
-        throwsA(isA<Exception>()),
-      ).timeout(const Duration(seconds: 2));
-      expect(container.read(displayNameProvider).hasError, isTrue);
-      expect(supabase.calls, 1);
-    });
+        await expectLater(
+          container.read(displayNameProvider.future),
+          throwsA(isA<Exception>()),
+        ).timeout(const Duration(seconds: 2));
+        expect(container.read(displayNameProvider).hasError, isTrue);
+        expect(supabase.calls, 1);
+      },
+    );
 
-    test('is disposed with its last listener (no cross-account cache)',
-        () async {
-      final supabase = _OfflineSupabase();
-      final container =
-          _container([supabaseClientProvider.overrideWithValue(supabase)]);
+    test(
+      'is disposed with its last listener (no cross-account cache)',
+      () async {
+        final supabase = _OfflineSupabase();
+        final container = _container([
+          supabaseClientProvider.overrideWithValue(supabase),
+        ]);
 
-      final sub = container.listen(displayNameProvider, (_, _) {});
-      await expectLater(
-        container.read(displayNameProvider.future),
-        throwsA(isA<Exception>()),
-      );
-      expect(container.exists(displayNameProvider), isTrue);
+        final sub = container.listen(displayNameProvider, (_, _) {});
+        await expectLater(
+          container.read(displayNameProvider.future),
+          throwsA(isA<Exception>()),
+        );
+        expect(container.exists(displayNameProvider), isTrue);
 
-      sub.close();
-      await container.pump();
-      expect(container.exists(displayNameProvider), isFalse);
-    });
+        sub.close();
+        await container.pump();
+        expect(container.exists(displayNameProvider), isFalse);
+      },
+    );
   });
 }

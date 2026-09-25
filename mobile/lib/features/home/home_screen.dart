@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/gen/app_localizations.dart';
-import '../../core/network/api_client.dart';
 import '../../core/providers.dart';
 import '../../core/routing/routes.dart';
 import '../../core/theme/app_theme.dart';

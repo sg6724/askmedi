@@ -4,20 +4,40 @@ import 'package:flutter_test/flutter_test.dart';
 
 AppStatus status({
   bool lang = true,
+  bool intro = true,
   bool signedIn = true,
   bool loaded = true,
   bool consents = true,
   bool profile = true,
-}) =>
-    AppStatus(
-      languageChosen: lang,
-      signedIn: signedIn,
-      onboardingLoaded: loaded,
-      consentsGiven: consents,
-      profileComplete: profile,
-    );
+}) => AppStatus(
+  languageChosen: lang,
+  introSeen: intro,
+  signedIn: signedIn,
+  onboardingLoaded: loaded,
+  consentsGiven: consents,
+  profileComplete: profile,
+);
 
 void main() {
+  test('language chosen but intro not seen -> welcome, before sign in', () {
+    expect(
+      redirectFor(status(intro: false, signedIn: false), Routes.signIn),
+      Routes.welcome,
+    );
+    expect(
+      redirectFor(status(intro: false, signedIn: false), Routes.welcome),
+      isNull,
+    );
+    expect(
+      redirectFor(status(lang: false, intro: false), Routes.welcome),
+      Routes.language,
+    );
+  });
+
+  test('intro seen -> welcome is left for the next step', () {
+    expect(redirectFor(status(signedIn: false), Routes.welcome), Routes.signIn);
+  });
+
   test('no language -> language screen', () {
     expect(redirectFor(status(lang: false), Routes.splash), Routes.language);
     expect(redirectFor(status(lang: false), Routes.language), isNull);
@@ -34,13 +54,17 @@ void main() {
   });
 
   test('missing consents -> consent before profile', () {
-    expect(redirectFor(status(consents: false, profile: false), Routes.home),
-        Routes.consent);
+    expect(
+      redirectFor(status(consents: false, profile: false), Routes.home),
+      Routes.consent,
+    );
   });
 
   test('missing profile -> profile setup', () {
-    expect(redirectFor(status(profile: false), Routes.consent),
-        Routes.profileSetup);
+    expect(
+      redirectFor(status(profile: false), Routes.consent),
+      Routes.profileSetup,
+    );
   });
 
   test('fully onboarded: pre-app routes bounce to home, app routes stay', () {
@@ -56,8 +80,7 @@ void main() {
     expect(redirectFor(status(), Routes.home), isNull);
   });
 
-  test(
-      'OAuth deep link /login-callback: signed in, onboarding not loaded -> '
+  test('OAuth deep link /login-callback: signed in, onboarding not loaded -> '
       'splash, which is stable', () {
     final s = status(loaded: false);
     final target = redirectFor(s, Routes.loginCallback);
@@ -72,11 +95,12 @@ void main() {
           for (final consents in [true, false]) {
             for (final profile in [true, false]) {
               final s = status(
-                  lang: lang,
-                  signedIn: signedIn,
-                  loaded: loaded,
-                  consents: consents,
-                  profile: profile);
+                lang: lang,
+                signedIn: signedIn,
+                loaded: loaded,
+                consents: consents,
+                profile: profile,
+              );
               final first = redirectFor(s, Routes.loginCallback);
               if (first != null) expect(redirectFor(s, first), isNull);
             }

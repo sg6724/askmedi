@@ -14,14 +14,17 @@ class SplashScreen extends ConsumerWidget {
     return Scaffold(
       body: Center(
         child: status.hasError
-            ? Column(mainAxisSize: MainAxisSize.min, children: [
-                Text(l10n.genericError),
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: () => ref.invalidate(onboardingStatusProvider),
-                  child: Text(l10n.retry),
-                ),
-              ])
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(l10n.genericError),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: () => ref.invalidate(onboardingStatusProvider),
+                    child: Text(l10n.retry),
+                  ),
+                ],
+              )
             : const CircularProgressIndicator(),
       ),
     );
