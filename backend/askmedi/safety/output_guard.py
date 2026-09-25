@@ -10,7 +10,12 @@ _UNITS = (
 )
 
 BANNED_PATTERNS: dict[str, re.Pattern[str]] = {
-    "dose": re.compile(rf"(?<![\w.])\d+(?:[.,]\d+)?\s*{_UNITS}(?![a-z])", re.IGNORECASE),
+    # A unit "per volume" (mg/dL, g/dL, units/L) is a lab concentration, not a dose;
+    # "mg/day" or "ml/kg" still count as doses.
+    "dose": re.compile(
+        rf"(?<![\w.])\d+(?:[.,]\d+)?\s*{_UNITS}(?![a-z])(?!\s*/\s*(?:d|m|µ|μ)?l\b)",
+        re.IGNORECASE,
+    ),
     "dose_frequency": re.compile(
         r"\b(?:once|twice|thrice|\d+\s*times)\s+(?:a|per)\s+day\b"
         r"|\bevery\s+\d+\s*(?:hours?|hrs?)\b",
