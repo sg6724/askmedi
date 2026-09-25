@@ -1,0 +1,189 @@
+# AskMedi red-flag rules, version 1.
+# review_status: source-derived — written from the cited public sources, not yet signed off by a clinician.
+#
+# Matching (see askmedi/safety/red_flags.py): text is lower-cased, NFC-normalised, punctuation is
+# turned into spaces, and each phrase must match whole words. A phrase ending in "*" matches any word
+# that starts with the last word (e.g. "saans*" matches "saans" and "saanse").
+# A rule fires when ANY phrase in `keywords` matches, or when EVERY group of one entry in `combos`
+# has a matching phrase (e.g. pregnancy AND bleeding).
+# action: emergency_112 -> call 112 (national emergency) then 108; emergency_108 -> ambulance 108 first.
+version: 1
+review_status: source-derived
+
+messages:
+  en: "This could be a medical emergency. Call {numbers} now or go to the nearest emergency department. Do not wait."
+  hi: "यह मेडिकल इमरजेंसी हो सकती है। अभी {numbers} पर कॉल करें या नज़दीकी इमरजेंसी विभाग जाएँ। इंतज़ार न करें।"
+  mr: "ही वैद्यकीय आणीबाणी असू शकते. आत्ताच {numbers} वर कॉल करा किंवा जवळच्या आपत्कालीन विभागात जा. वाट पाहू नका."
+
+rules:
+  - id: chest_pain
+    action: emergency_112
+    source:
+      title: "MedlinePlus: Chest Pain"
+      url: "https://medlineplus.gov/chestpain.html"
+    reason:
+      en: "Chest pain or pressure can be a sign of a heart attack."
+      hi: "सीने में दर्द या दबाव दिल के दौरे का संकेत हो सकता है।"
+      mr: "छातीत दुखणे किंवा दाब येणे हे हृदयविकाराच्या झटक्याचे लक्षण असू शकते."
+    keywords:
+      en: [chest pain, pain in chest, pain in my chest, chest pressure, pressure in my chest, chest tightness, tightness in chest, tightness in my chest, heart attack, crushing chest]
+      hi: [सीने में दर्द, सीने मे दर्द, छाती में दर्द, छाती मे दर्द, सीने में दबाव, सीने में जकड़न, छाती में जकड़न, दिल का दौरा, हार्ट अटैक]
+      mr: [छातीत दुखत, छातीत दुखणे, छातीत वेदना, छातीत दाब, छातीत कळ, हृदयविकाराचा झटका, हार्ट अटॅक]
+      romanised: [seene mein dard, seene me dard, sine me dard, sine mein dard, seene main dard, chhati mein dard, chhati me dard, chati me dard, chati mein dard, chest mein dard, chest me dard, chest main dard, seene mein dabav, seene me jakdan, dil ka daura, heart attack, chhatit dukhat, chatit dukhat, chhatit dukhte, chhatit vedna, chhatit dab]
+
+  - id: stroke_signs
+    action: emergency_108
+    source:
+      title: "MedlinePlus: Stroke"
+      url: "https://medlineplus.gov/stroke.html"
+    reason:
+      en: "Face drooping, arm weakness or trouble speaking can be signs of a stroke. Every minute matters."
+      hi: "चेहरा टेढ़ा होना, हाथ में कमज़ोरी या बोलने में दिक्कत लकवे (स्ट्रोक) के संकेत हो सकते हैं। हर मिनट कीमती है।"
+      mr: "चेहरा वाकडा होणे, हात कमजोर होणे किंवा बोलताना अडचण ही पक्षाघाताची (स्ट्रोक) लक्षणे असू शकतात. प्रत्येक मिनिट महत्त्वाचे आहे."
+    keywords:
+      en: [stroke, face drooping, face is drooping, drooping face, one side of face, one side of my body, one side of the body, sudden weakness, arm weakness, cannot move my arm, can't move my arm, slurred speech, trouble speaking, cannot speak, can't speak properly, sudden numbness, facial droop]
+      hi: [लकवा, स्ट्रोक, चेहरा टेढ़ा, मुंह टेढ़ा, मुँह टेढ़ा, एक तरफ़ कमज़ोरी, एक तरफ कमजोरी, बोलने में दिक्कत, बोलने में परेशानी, ज़बान लड़खड़ा, जबान लड़खड़ा, हाथ सुन्न]
+      mr: [पक्षाघात, अर्धांगवायू, लकवा, स्ट्रोक, चेहरा वाकडा, तोंड वाकडे, तोंड वाकडं, बोलताना अडचण, बोलता येत नाही, एका बाजूला कमजोरी, हात लुळा]
+      romanised: [lakwa, lakva, laqwa, chehra tedha, munh tedha, muh tedha, mooh tedha, bolne mein dikkat, bolne me dikkat, bolne me pareshani, zaban ladkhada, jaban ladkhada, ek taraf kamzori, ek taraf kamjori, haath sunn, paksha ghat, pakshaghat, ardhangvayu, chehra vakda, tond vakda, bolta yet nahi]
+
+  - id: breathing_difficulty
+    action: emergency_108
+    source:
+      title: "MedlinePlus: Breathing Problems"
+      url: "https://medlineplus.gov/breathingproblems.html"
+    reason:
+      en: "Severe difficulty breathing needs emergency care."
+      hi: "साँस लेने में गंभीर तकलीफ़ के लिए तुरंत इमरजेंसी इलाज चाहिए।"
+      mr: "श्वास घेण्यास तीव्र त्रास होत असल्यास तात्काळ आपत्कालीन उपचार आवश्यक आहेत."
+    keywords:
+      en: [can't breathe, cannot breathe, can not breathe, unable to breathe, difficulty breathing, trouble breathing, hard to breathe, struggling to breathe, gasping for air, gasping, choking, short of breath at rest, lips turning blue, blue lips, severe breathlessness]
+      hi: [साँस नहीं, सांस नहीं, साँस लेने में तकलीफ, सांस लेने में तकलीफ, साँस लेने में दिक्कत, सांस लेने में दिक्कत, साँस फूल, सांस फूल, दम घुट, होंठ नीले]
+      mr: [श्वास घेता येत नाही, श्वास घेण्यास त्रास, श्वास घ्यायला त्रास, दम लागत, धाप लागत, श्वास कोंडला, ओठ निळे]
+      romanised: [saans nahi, sans nahi, saas nahi, saans lene mein takleef, saans lene me takleef, saans lene me taklif, sans lene me taklif, saans lene mein dikkat, saans lene me dikkat, sans lene me dikkat, saans phool, sans phool, saans ful, dum ghut, dam ghut, shwas gheta yet nahi, shwas ghenyas tras, dam lagat, dhap lagat, swas ghyayla tras]
+
+  - id: severe_bleeding
+    action: emergency_108
+    source:
+      title: "MedlinePlus: Bleeding"
+      url: "https://medlineplus.gov/bleeding.html"
+    reason:
+      en: "Heavy bleeding that does not stop needs emergency care."
+      hi: "ज़्यादा खून बहना जो रुक नहीं रहा, उसके लिए तुरंत इमरजेंसी इलाज चाहिए।"
+      mr: "न थांबणारा जास्त रक्तस्राव झाल्यास तात्काळ आपत्कालीन उपचार आवश्यक आहेत."
+    keywords:
+      en: [bleeding won't stop, bleeding will not stop, bleeding does not stop, bleeding doesn't stop, bleeding not stopping, heavy bleeding, severe bleeding, lot of blood, losing a lot of blood, vomiting blood, coughing up blood, blood in vomit, spurting blood]
+      hi: [खून रुक नहीं, खून नहीं रुक, बहुत खून, ज़्यादा खून बह, ज्यादा खून बह, खून की उल्टी, उल्टी में खून, खांसी में खून, खाँसी में खून]
+      mr: [रक्त थांबत नाही, खूप रक्त, रक्तस्त्राव थांबत नाही, रक्तस्राव थांबत नाही, रक्ताची उलटी, उलटीत रक्त, खोकल्यात रक्त]
+      romanised: [khoon ruk nahi, khoon nahi ruk, khun ruk nahi, bahut khoon, bahut khun, zyada khoon beh, jyada khoon beh, khoon ki ulti, khun ki ulti, ulti mein khoon, ulti me khoon, khansi mein khoon, khansi me khoon, rakt thambat nahi, khup rakt, raktachi ulti]
+
+  - id: unconscious_or_seizure
+    action: emergency_108
+    source:
+      title: "MedlinePlus: Seizures"
+      url: "https://medlineplus.gov/seizures.html"
+    reason:
+      en: "Fainting, not waking up or a seizure needs emergency care."
+      hi: "बेहोशी, होश न आना या दौरा पड़ना — इसके लिए तुरंत इमरजेंसी इलाज चाहिए।"
+      mr: "बेशुद्ध होणे, शुद्धीवर न येणे किंवा झटका येणे — यासाठी तात्काळ आपत्कालीन उपचार आवश्यक आहेत."
+    keywords:
+      en: [unconscious, passed out, fainted, not waking up, won't wake up, will not wake up, unresponsive, seizure, seizures, convulsion, convulsions, fits, having a fit]
+      hi: [बेहोश, होश नहीं, होश में नहीं, दौरा पड़, दौरे पड़, मिर्गी, झटके आ]
+      mr: [बेशुद्ध, शुद्ध नाही, शुद्धीवर नाही, फिट आली, फिट येत, झटके येत, मिरगी, आकडी]
+      romanised: [behosh, hosh nahi, hosh mein nahi, hosh me nahi, daura pad, daure pad, mirgi, jhatke aa, beshuddh, beshudh, shuddh nahi, shudhivar nahi, fit aali, fit yet, akdi, aakdi]
+
+  - id: suicidal_thoughts
+    action: emergency_112
+    helplines: ["14416"]
+    source:
+      title: "Tele MANAS — Ministry of Health and Family Welfare (call 14416)"
+      url: "https://telemanas.mohfw.gov.in/"
+    reason:
+      en: "You deserve support right now. Tele MANAS (14416) offers free, confidential help 24x7. If you are in immediate danger, call 112."
+      hi: "आपको अभी मदद मिलनी चाहिए। टेली मानस (14416) पर 24x7 मुफ़्त और गोपनीय मदद मिलती है। अगर तुरंत खतरा है तो 112 पर कॉल करें।"
+      mr: "तुम्हाला आत्ता मदत मिळायला हवी. टेली मानस (14416) वर 24x7 मोफत आणि गोपनीय मदत मिळते. तात्काळ धोका असल्यास 112 वर कॉल करा."
+    keywords:
+      en: [suicide, suicidal, kill myself, end my life, want to die, don't want to live, do not want to live, self harm, self-harm, hurt myself, take my own life]
+      hi: [आत्महत्या, खुदकुशी, ख़ुदकुशी, मरना चाहता, मरना चाहती, जीना नहीं चाहता, जीना नहीं चाहती, खुद को मार, ज़िंदगी खत्म, जिंदगी खत्म]
+      mr: [आत्महत्या, जीव द्यायचा, मरायचे आहे, मरायचं आहे, जगायचे नाही, जगायचं नाही, स्वतःला इजा]
+      romanised: [aatmahatya, atmahatya, khudkushi, marna chahta, marna chahti, jeena nahi chahta, jina nahi chahta, jeena nahi chahti, khud ko maar, zindagi khatam, jindagi khatam, jiv dyaycha, marayche aahe, marayche ahe, jagayche nahi, jagaycha nahi]
+
+  - id: poisoning_overdose
+    action: emergency_108
+    source:
+      title: "MedlinePlus: Poisoning"
+      url: "https://medlineplus.gov/poisoning.html"
+    reason:
+      en: "Poisoning or taking too much medicine needs emergency care, even if you feel fine now."
+      hi: "ज़हर या ज़्यादा दवा ले लेने पर तुरंत इमरजेंसी इलाज चाहिए, भले ही अभी ठीक लग रहा हो।"
+      mr: "विष किंवा जास्त औषध घेतल्यास, आत्ता बरे वाटत असले तरी तात्काळ आपत्कालीन उपचार आवश्यक आहेत."
+    keywords:
+      en: [poisoned, swallowed poison, drank poison, ate poison, took poison, consumed poison, overdose, overdosed, took too many pills, too many tablets, swallowed bleach, pesticide, rat poison, insecticide]
+      hi: [ज़हर, जहर, ज़हरीला, ज्यादा गोलियां, ज़्यादा गोलियाँ, ज्यादा दवा खा, ज़्यादा दवा खा, कीटनाशक, चूहे मारने की दवा]
+      mr: [विष, विषबाधा, जास्त गोळ्या, जास्त औषध घेतले, कीटकनाशक, उंदीर मारण्याचे औषध]
+      romanised: [zeher, zehar, jeher, jahar, zahar, zehreela, jyada goliyan, zyada goliyan, jyada dawa kha, zyada dawai kha, keetnashak, chuhe marne ki dawa, vish, vishbadha, jast golya]
+
+  - id: severe_allergic_reaction
+    action: emergency_108
+    source:
+      title: "MedlinePlus: Anaphylaxis"
+      url: "https://medlineplus.gov/anaphylaxis.html"
+    reason:
+      en: "Swelling of the face, lips or throat with trouble breathing can be a severe allergic reaction (anaphylaxis)."
+      hi: "चेहरे, होंठ या गले में सूजन के साथ साँस में दिक्कत गंभीर एलर्जी (एनाफिलेक्सिस) हो सकती है।"
+      mr: "चेहरा, ओठ किंवा घसा सुजून श्वास घेण्यास त्रास होणे ही तीव्र ॲलर्जी (ॲनाफिलॅक्सिस) असू शकते."
+    keywords:
+      en: [anaphylaxis, anaphylactic, throat swelling, throat is swelling, swollen throat, tongue swelling, swollen tongue, lips swelling, swollen lips, face swelling up, severe allergic reaction, throat closing]
+      hi: [गले में सूजन, जीभ में सूजन, होंठ सूज, होंठों में सूजन, चेहरा सूज, गंभीर एलर्जी, गला बंद]
+      mr: [घसा सुजला, घशात सूज, जीभ सुजली, ओठ सुजले, चेहरा सुजला, तीव्र ॲलर्जी, तीव्र अ‍ॅलर्जी]
+      romanised: [gale mein sujan, gale me sujan, gale me soojan, jeebh mein sujan, jeebh me sujan, honth sooj, hoth sooj, hont suj, chehra sooj, chehra suj, gala band, ghasa sujla, jibh sujli, oth sujle, chehra sujla]
+
+  - id: fever_with_danger_signs
+    action: emergency_108
+    source:
+      title: "MedlinePlus: Meningitis"
+      url: "https://medlineplus.gov/meningitis.html"
+    reason:
+      en: "High fever with a stiff neck, a rash or confusion can be a sign of a serious infection such as meningitis."
+      hi: "तेज़ बुखार के साथ गर्दन में अकड़न, दाने या भ्रम किसी गंभीर संक्रमण (जैसे मेनिनजाइटिस) का संकेत हो सकता है।"
+      mr: "जास्त तापासोबत मान ताठ होणे, पुरळ किंवा गोंधळ ही गंभीर संसर्गाची (उदा. मेनिंजायटिस) लक्षणे असू शकतात."
+    keywords:
+      en: [meningitis]
+      hi: [मेनिनजाइटिस, दिमागी बुखार]
+      mr: [मेंदूज्वर]
+      romanised: [dimagi bukhar, dimaagi bukhar]
+    combos:
+      - - [fever, high fever, temperature, bukhar, bukhaar, taap, tap, jwar, बुखार, बुख़ार, ताप, ज्वर]
+        - [stiff neck, neck is stiff, neck stiffness, can't bend my neck, cannot bend my neck, rash, rashes, confused, confusion, very drowsy, गर्दन में अकड़न, गर्दन अकड़, गर्दन जकड़, दाने, चकत्ते, भ्रम, मान ताठ, मान आखडली, पुरळ, गोंधळ, gardan akad, gardan mein akdan, gardan me akdan, gardan jakad, daane, dane, chakatte, bhram, man tath, maan tath, pural]
+
+  - id: pregnancy_emergency
+    action: emergency_108
+    source:
+      title: "MedlinePlus: Vaginal bleeding in pregnancy"
+      url: "https://medlineplus.gov/ency/article/003264.htm"
+    reason:
+      en: "Bleeding or severe belly pain during pregnancy needs urgent care."
+      hi: "गर्भावस्था में खून आना या पेट में तेज़ दर्द होने पर तुरंत इलाज चाहिए।"
+      mr: "गरोदरपणात रक्तस्राव किंवा पोटात तीव्र दुखणे असल्यास तात्काळ उपचार आवश्यक आहेत."
+    keywords:
+      en: [bleeding during pregnancy, bleeding in pregnancy, pregnancy bleeding]
+      hi: [गर्भावस्था में खून, प्रेगनेंसी में खून]
+      mr: [गरोदरपणात रक्तस्राव, गरोदरपणात रक्तस्त्राव]
+      romanised: [pregnancy mein bleeding, pregnancy me bleeding, pregnancy mein khoon, pregnancy me khoon, garbhavastha mein khoon]
+    combos:
+      - - [pregnant, pregnancy, expecting a baby, गर्भवती, गर्भ, प्रेगनेंट, प्रेग्नेंट, प्रेगनेंसी, गरोदर, garbhvati, garbhavati, garbhwati, pregnent, garodar]
+        - [bleeding, spotting, severe abdominal pain, severe stomach pain, severe belly pain, severe pain in my belly, खून, रक्तस्राव, रक्तस्त्राव, पेट में तेज़ दर्द, पेट में तेज दर्द, पोटात खूप दुखत, पोटात तीव्र वेदना, khoon, khun, rakt, pet mein tez dard, pet me tez dard, pet me bahut dard, pet mein bahut dard, potat khup dukhat]
+
+  - id: severe_dehydration
+    action: emergency_108
+    source:
+      title: "MedlinePlus: Dehydration"
+      url: "https://medlineplus.gov/dehydration.html"
+    reason:
+      en: "Not passing urine, fainting or being unable to keep fluids down are signs of severe dehydration."
+      hi: "पेशाब न आना, चक्कर खाकर गिरना या पानी तक न रुकना गंभीर डिहाइड्रेशन के संकेत हैं।"
+      mr: "लघवी न होणे, चक्कर येऊन पडणे किंवा पाणीही न टिकणे ही तीव्र डिहायड्रेशनची लक्षणे आहेत."
+    keywords:
+      en: [severe dehydration, severely dehydrated, not passed urine, no urine all day, haven't urinated, have not urinated, can't keep water down, cannot keep water down, can't keep fluids down, cannot keep fluids down, sunken eyes]
+      hi: [गंभीर डिहाइड्रेशन, पेशाब नहीं आ, पेशाब बंद, पानी भी नहीं रुक, पानी तक नहीं रुक]
+      mr: [तीव्र डिहायड्रेशन, लघवी होत नाही, लघवी बंद, पाणीही टिकत नाही, पाणी सुद्धा टिकत नाही]
+      romanised: [peshab nahi aa, peshab band, pesab nahi aa, paani bhi nahi ruk, pani bhi nahi ruk, pani tak nahi ruk, laghvi hot nahi, laghavi hot nahi, laghvi band, pani pan tikat nahi]
